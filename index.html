@@ -31,7 +31,6 @@
 <body>
   <canvas id="pixelCanvas" style="object-fit: contain; position: absolute;"></canvas>
   <script>
-  const message = "🔄"; //₿ Update this variable with the desired word, character, number, etc.
   const pixelSize = 8;
   const numSpaces = 11;
   const numRows = 64;
@@ -138,53 +137,6 @@
       return pattern.flat();
     }
 
-    function drawPixelatedText(message, x, y, scale, color5) {
-      const offscreenCanvas = document.createElement('canvas');
-      const offscreenCtx = offscreenCanvas.getContext('2d');
-      offscreenCanvas.width = canvas.width;
-      offscreenCanvas.height = canvas.height;
-
-      // Draw the text on the offscreen canvas
-      offscreenCtx.font = `${384 * scale}px Arial`;
-      if (isAndroid) {
-        offscreenCtx.font = `${320 * scale}px Arial`;
-      }
-      offscreenCtx.fillStyle = color5;
-      offscreenCtx.textAlign = "center";
-      offscreenCtx.textBaseline = "middle";
-      offscreenCtx.fillText(message, x * scale, y * scale);
-
-      // Extract the pixel data of the text
-      const textData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-      const pixels = textData.data;
-
-      // Modify pixels to apply random opacity and brightness
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 3] > 0) { // Only modify non-transparent pixels
-          // Randomize brightness
-          const brightnessOffset = getRandomInt(-40, 40);
-          pixels[i] = Math.min(255, Math.max(0, pixels[i] + brightnessOffset)); // Red
-          pixels[i + 1] = Math.min(255, Math.max(0, pixels[i + 1] + brightnessOffset)); // Green
-          pixels[i + 2] = Math.min(255, Math.max(0, pixels[i + 2] + brightnessOffset)); // Blue
-
-          // Randomize opacity (apply to alpha channel)
-          if (Math.random() < 0.5) { // 50% chance to reduce opacity
-            pixels[i + 3] = pixels[i + 3] * getRandomInt(50, 100) / 100; // Random opacity 50-100%
-          }
-        }
-      }
-
-      // Put the modified pixel data back onto the offscreen canvas
-      offscreenCtx.putImageData(textData, 0, 0);
-
-      // Draw the offscreen canvas onto the main canvas
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(
-        offscreenCanvas,
-        0, 0, offscreenCanvas.width, offscreenCanvas.height,
-        0, 0, canvas.width / scale, canvas.height / scale
-      );
-    }
 
     function drawPixelArtRug() {
       const rugStartX = numSpaces * pixelSize;
@@ -232,17 +184,6 @@
       ctx.lineWidth = lW; // Set the border width
       ctx.strokeRect(rugStartX, rugStartY, rugEndX - rugStartX, rugEndY - rugStartY);
 
-      // Draw the text on top
-      const centerX = canvas.width / 2;
-      var textY; // Declare
-
-      if (isAndroid) {
-          textY = drawPixelatedText(message, centerX, canvas.height / 1.85, 0.125, color5);
-      } else if (isIOS) {
-          textY = drawPixelatedText(message, canvas.width / 2.01, canvas.height / 1.98, 0.125, color5);
-      } else {
-          textY = drawPixelatedText(message, centerX, canvas.height / 1.8, 0.125, color5);
-      }
     }
 
 
