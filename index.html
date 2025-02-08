@@ -31,21 +31,23 @@
 <body>
   <canvas id="pixelCanvas" style="object-fit: contain; position: absolute;"></canvas>
   <script>
-  const pixelSize = 8;
-  const numSpaces = 11;
-  const numRows = 64;
+  const pixelSize = 8;//cannot change
+  const numSpaces = 11;//range 8-12
+  const numRows = 62;// range 40-100 must be even
+  const seed = Math.floor(Math.random() * 10000);//Math.floor(3385 + Math.random() * 3);console.log(seed);
+  const scale = 80;//70 + Math.random() * 90;range: 35-150
   const frayLength = pixelSize * 5.5; // Adjust the length of the fray
-  const frayCount = 10; // Adjust the number of frays
-  const fR1 = 4.5;
-  const fR2 = 3.5;
+  const frayCount = 10;
+  const fR1 = 8;//fr1 always greater, 7 and 8 = straight 3.85-3 the smallest
+  const fR2 = 6.5;//max 5 apart rare,
   const lW = 1;
-  const color1 = "#ffffff"; // Additional color 1
-  const color2 = "#ffffff"; // Additional color 2
-  const color3 = "#ffffff"; // Additional color 3
-  const color4 = "#ffffff"; // Additional color 3
-  const color5 = '#3b88c3';//adjustColorBrightness('#0731a7', getRandomInt(-40, 40)); // Text color for the message
-  const color6 = "#ffffff"; // Base color for the rug pattern
-  const color7 = "#d8d8d8"; // Border color for the middle rug
+  const color1 = "#296de5";
+  const color2 = "#9ce8b3";
+  const color3 = "#e7cd0a";
+  const color4 = "#b53544";
+  const color5 = "#e7cd0a"; // Text color for the message-Color to match modal match one of main with this one
+  const color6 = "#000000";
+  const color7 = "#222222"; // Border color for the middle rug
   const colorMap = {
     5: color6,
     6: color5,
@@ -55,6 +57,15 @@
     13: color3,
     14: color4
   };
+
+  const aY = [5, 11, 12, 13, 14];
+  const shuffledArray = [...aY].sort(() => Math.random() - 0.5); // Shuffle the array
+
+  const rV1 = shuffledArray[0];
+  const rV2 = shuffledArray[1];
+  const rV3 = shuffledArray[2];
+  const rV4 = shuffledArray[3];
+  const rV5 = shuffledArray[4];
 
   var isAndroid = /Android/i.test(navigator.userAgent);
   var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -98,8 +109,142 @@
       canvas.style.height = `${newVH}vh`;
     }
 
+    function generatePermutationArray(seed) {
+      const array = Array.from({ length: 265 }, (_, i) => i);
+      let random = mulberry32(seed);
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array.concat(array); // Duplicate the array to avoid wraparound issues
+    }
+
+    function mulberry32(a) {
+      return function () {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function perlin(x, y, z, perm) {
+      function fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+      }
+
+      function lerp(t, a, b) {
+        return a + t * (b - a);
+      }
+
+      function grad(hash, x, y, z) {
+        const h = hash & 15;
+        const u = h < 8 ? x : y;
+        const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+      }
+
+      const X = Math.floor(x) & 255;
+      const Y = Math.floor(y) & 255;
+      const Z = Math.floor(z) & 255;
+
+      x -= Math.floor(x);
+      y -= Math.floor(y);
+      z -= Math.floor(z);
+
+      const u = fade(x);
+      const v = fade(y);
+      const w = fade(z);
+
+      const A = perm[X] + Y;
+      const AA = perm[A] + Z;
+      const AB = perm[A + 1] + Z;
+      const B = perm[X + 1] + Y;
+      const BA = perm[B] + Z;
+      const BB = perm[B + 1] + Z;
+
+      return lerp(w, lerp(v, lerp(u, grad(perm[AA], x, y, z), grad(perm[BA], x - 1, y, z)), lerp(u, grad(perm[AB], x, y - 1, z), grad(perm[BB], x - 1, y - 1, z))), lerp(v, lerp(u, grad(perm[AA + 1], x, y, z - 1), grad(perm[BA + 1], x - 1, y, z - 1)), lerp(u, grad(perm[AB + 1], x, y - 1, z - 1), grad(perm[BB + 1], x - 1, y - 1, z - 1))));
+    }
+    function generatePerlinNoisePattern(width, height, scale, seed) {
+      const perm = generatePermutationArray(seed);
+      const noise = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          const value = perlin(x / scale, y / scale, 0, perm);
+          row.push(value);
+        }
+        noise.push(row);
+      }
+      return noise;
+    }
+
+//might not need this
+    function avoidLongStraightLines(noise, width, height) {
+      const threshold = 0.35;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          if (noise[y][x] > threshold) {
+            let count = 0;
+            if (noise[y - 1][x] > threshold) count++;
+            if (noise[y + 1][x] > threshold) count++;
+            if (noise[y][x - 1] > threshold) count++;
+            if (noise[y][x + 1] > threshold) count++;
+            if (count >= 3) {
+              noise[y][x] = Math.random() * threshold;
+            }
+          }
+        }
+      }
+      return noise;
+    }
+
+//might not need this
+    function countPatternColors(pattern) {
+      const counts = { 5: 0, 11: 0, 12: 0, 13: 0, 14: 0 };
+      pattern.forEach(code => {
+        if (counts[code] !== undefined) counts[code]++;
+      });
+      return counts;
+    }
+
+//might not need this
+    function ensurePatternPresence(pattern, rowLength, numRows) {
+      const patternColors = [5, 11, 12, 13, 14];
+      const totalPixels = rowLength * numRows;
+      const minPatternPixels = Math.ceil(totalPixels * 0);
+
+      patternColors.forEach(color => {
+        let count = pattern.filter(code => code === color).length;
+        let attempts = 0;
+        const maxAttempts = totalPixels * 2;
+
+        while (count < minPatternPixels && attempts < maxAttempts) {
+          const index = getRandomInt(0, pattern.length - 1);
+          if (pattern[index] === 5) {
+            pattern[index] = color;
+            count++;
+          }
+          attempts++;
+        }
+      });
+
+      return pattern;
+    }
+
     function generateRugPattern(numSpaces, numRows, rowLength) {
+
+      let noise = generatePerlinNoisePattern(rowLength, numRows, scale, seed);
       const pattern = [];
+
+      // Randomizing the ranges for noise thresholds
+      const thresholds = {
+        t1: Math.random() * 0.1 + 0.05,
+        t2: Math.random() * 0.1 + 0.15,
+        t3: Math.random() * 0.1 + 0.25,
+        t4: Math.random() * 0.1 + 0.3 // Ensure it covers a sufficient range
+      };
+
       for (let row = 0; row < numRows; row++) {
         const rowPattern = [];
         for (let col = 0; col < rowLength; col++) {
@@ -109,34 +254,46 @@
             if (col < numSpaces || col >= rowLength - numSpaces) {
               rowPattern.push(9); // Solid color for the ends of even rows
             } else {
-              // Apply additional colors with a 40% chance
-              if (Math.random() < 0.4) {
-                const colorIndex = getRandomInt(11, 14);
-                rowPattern.push(colorIndex);
+              // Apply additional colors based on noise pattern and thresholds
+              const noiseValue = noise[row][col];
+              if (noiseValue < thresholds.t1) {
+                rowPattern.push(rV1);
+              } else if (noiseValue < thresholds.t2) {
+                rowPattern.push(rV2);
+              } else if (noiseValue < thresholds.t3) {
+                rowPattern.push(rV3);
+              } else if (noiseValue < thresholds.t4) {
+                rowPattern.push(rV4);
               } else {
-                rowPattern.push(5); // Solid pattern for the middle part of even rows
+                rowPattern.push(rV5); // Solid pattern for the middle part of even rows
               }
             }
           } else {
             if (col < numSpaces || col >= rowLength - numSpaces) {
               rowPattern.push(9); // Transparent for the ends of odd rows
             } else {
-              // Apply additional colors with a 40% chance
-              if (Math.random() < 0.4) {
-                const colorIndex = getRandomInt(11, 14);
-                rowPattern.push(colorIndex);
+              // Apply additional colors based on noise pattern and thresholds
+              const noiseValue = noise[row][col];
+              if (noiseValue < thresholds.t1) {
+                rowPattern.push(rV1);
+              } else if (noiseValue < thresholds.t2) {
+                rowPattern.push(rV2);
+              } else if (noiseValue < thresholds.t3) {
+                rowPattern.push(rV3);
+              } else if (noiseValue < thresholds.t4) {
+                rowPattern.push(rV4);
               } else {
-                rowPattern.push(5); // Solid pattern for the middle part of odd rows
+                rowPattern.push(rV5); // Solid pattern for the middle part of odd rows
               }
             }
           }
         }
         pattern.push(rowPattern);
       }
-
-      return pattern.flat();
+      //return pattern.flat();
+      const flatPattern = pattern.flat();
+      return ensurePatternPresence(flatPattern, rowLength, numRows);
     }
-
 
     function drawPixelArtRug() {
       const rugStartX = numSpaces * pixelSize;
@@ -179,7 +336,8 @@
         }
       }
 
-      // Draw the border
+
+      ctx.setLineDash([4.95, 3]);
       ctx.strokeStyle = color7;
       ctx.lineWidth = lW; // Set the border width
       ctx.strokeRect(rugStartX, rugStartY, rugEndX - rugStartX, rugEndY - rugStartY);
