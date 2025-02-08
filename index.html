@@ -66,7 +66,7 @@
   const rV3 = shuffledArray[2];
   const rV4 = shuffledArray[3];
   const rV5 = shuffledArray[4];
-
+  
   var isAndroid = /Android/i.test(navigator.userAgent);
   var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -235,6 +235,7 @@
     function generateRugPattern(numSpaces, numRows, rowLength) {
 
       let noise = generatePerlinNoisePattern(rowLength, numRows, scale, seed);
+      noise = avoidLongStraightLines(noise, rowLength, numRows);//pixeled mixed color center comment out for single color center
       const pattern = [];
 
       // Randomizing the ranges for noise thresholds
@@ -342,6 +343,17 @@
       ctx.lineWidth = lW; // Set the border width
       ctx.strokeRect(rugStartX, rugStartY, rugEndX - rugStartX, rugEndY - rugStartY);
 
+  /*    // Draw the text on top
+      const centerX = canvas.width / 2;
+      var textY; // Declare
+
+      if (isAndroid) {
+          textY = drawPixelatedText(message, centerX, canvas.height / 1.85, 0.125, color5);
+      } else if (isIOS) {
+          textY = drawPixelatedText(message, canvas.width / 2.01, canvas.height / 1.98, 0.125, color5);
+      } else {
+          textY = drawPixelatedText(message, centerX, canvas.height / 1.8, 0.125, color5);
+      } */
     }
 
 
