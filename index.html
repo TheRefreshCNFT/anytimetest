@@ -19,6 +19,14 @@
   <canvas id="canvas" style="object-fit: contain; width: 100vw; height: 100vh;"></canvas>
 
   <script>
+  const text = "₳";
+  const chng = .95;//.7-.95
+  const cubeSize = 25;
+  let redStop = getRandomRange(0.15, 0.25);  // Red stops earlier
+  let whiteStopStart = redStop + getRandomRange(0.05, 0.10); // White starts soon after red
+  let whiteStopEnd = whiteStopStart + getRandomRange(0.15, 0.25); // White stays longer
+  let blueStop = getRandomRange(whiteStopEnd + 0.05, 1.0); // Blue starts later
+
 /*Release canvas from memory*/
 function releaseCanvas(canvas) {
 canvas.width = 1;
@@ -43,25 +51,15 @@ let fadeToColor = false;
 let fading = false;
 let explosionTriggered = false; // Prevents multiple explosions per cycle
 let nextColor;
-const text = "₳";
 const fontSize = 3072;
-const cubeSize = 20;
 const cubes = [];
-let colorChangeSpeed;
 let isAndroid = /Android/i.test(navigator.userAgent);
 let isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 let colors = [];
 let snake = [];
 let currentColorIndex = 0; // Global index of the "base" color
+const colorChangeSpeed = 100;
 
-//Set speed for devices
-if (isAndroid) {
-    colorChangeSpeed = 100; // speed in milliseconds (note: very low values may be clamped)
-} else if (isIOS) {
-    colorChangeSpeed = 100;
-} else {
-    colorChangeSpeed = 100;
-}
 
 //Cube class
 class Cube {
@@ -189,10 +187,7 @@ const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); //
 function getRandomRange(min, max) {
        return Math.random() * (max - min) + min;
    }
-   let redStop = getRandomRange(0.15, 0.25);  // Red stops earlier
-               let whiteStopStart = redStop + getRandomRange(0.05, 0.10); // White starts soon after red
-               let whiteStopEnd = whiteStopStart + getRandomRange(0.15, 0.25); // White stays longer
-               let blueStop = getRandomRange(whiteStopEnd + 0.05, 1.0); // Blue starts later
+
 
                gradient.addColorStop(0, "red");
                gradient.addColorStop(redStop, "red");
@@ -257,7 +252,7 @@ function waveColorChange() {
 
     // Use currentColorIndex as the base.
     const changedCount = cubes.filter(cube => cube.colorIndex !== currentColorIndex).length;
-    if ((Date.now() - startTime >= 15000 || (changedCount / cubes.length) >= 0.95) && !fading && !explosionTriggered) {
+    if ((Date.now() - startTime >= 15000 || (changedCount / cubes.length) >= chng) && !fading && !explosionTriggered) {
         explosionTriggered = true;
         // Do not clear the canvas here so explosion trails remain
         fadeToColor = true;
@@ -355,7 +350,7 @@ let timer;
 
 
 function initCanvas() {
-    attachCanvasEventListeners();
+    //attachCanvasEventListeners();
 }
 
 initCanvas();
