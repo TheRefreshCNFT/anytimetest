@@ -1,29 +1,384 @@
-<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{overflow:hidden;background: linear-gradient(to bottom, #000000, #ffffff, #000000);display:flex;justify-content:center;align-items:center;height:100vh;margin:0}body,html{margin:0!important}.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#555;padding:20px;border-radius:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;box-shadow:0 0 20px gold;z-index:10}.modal button{padding:10px;background:#000;color:gold;border:none;font-weight:700;cursor:pointer;box-shadow:0 0 10px gold}</style></head><body><canvas id="pixelCanvas" style="object-fit:contain;position:absolute"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <style>
+      body {
+          margin: 0;
+          overflow: hidden;
+          background-color: #000000;
+      }
+      canvas {
+          display: block;
+      }
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas" style="object-fit: contain; width: 100vw; height: 100vh;"></canvas>
+
   <script>
-  const message = "\uD83D\uDD04";
-  const numRows = 72;
-  const pixelSize = 8;
-  const frayLength = pixelSize * 4.04;
-  const frayCount = 7;
-  const fR1 = 4.93;
-  const fR2 = 4.46;
-  let color1;
-  var isAndroid = /Android/i.test(navigator.userAgent);
-  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isAndroid) {
-    color1 = "#ffffff";
-  } else if (isIOS) {
-    color1 = "#ffffff";
-  } else {
-    color1 = "#ffffff";
-  }
-  const color2 = "#ffffff";
-  const color3 = "#ffffff";
-  const color4 = "#ffffff";
-  const color5 = color1
-  const color6 = "#ffffff";
-  const color7 = color1;
+/*Release canvas from memory*/
+function releaseCanvas(canvas) {
+canvas.width = 1;
+canvas.style.width = "1vw";
+canvas.height = 1;
+canvas.style.height = "1vh";
+const ctx = canvas.getContext('2d');
+ctx && ctx.clearRect(0, 0, 1, 1);
+canvas.remove();
+}
 
-const colorMap={5:color6,6:color5,9:"transparent",11:color1,12:color2,13:color3,14:color4};const lW=.0075;function getRandomInt(t,n){return Math.floor(Math.random()*(n-t+1)+t)}function adjustColorBrightness(t,n){const e=t[0]==="#";const o=parseInt(t.slice(1),16);let a=(o>>16)+n;let c=(o>>8&255)+n;let s=(o&255)+n;if(a>255)a=255;else if(a<0)a=0;if(c>255)c=255;else if(c<0)c=0;if(s>255)s=255;else if(s<0)s=0;return(e?"#":"")+(a<<16|c<<8|s).toString(16).padStart(6,"0")}const canvas=document.getElementById("pixelCanvas");const ctx=canvas.getContext("2d");const canvasWidth=1024;const numSpaces=11;const rowLength=canvasWidth/pixelSize;const patternHeight=numRows*pixelSize;const rugPattern=generateRugPattern(numSpaces,numRows,rowLength);canvas.width=canvasWidth;canvas.height=patternHeight;canvas.style.width="100vw";if(numRows<=43){canvas.style.height="100vh"}else{const newVH=100-(numRows-43)*.1;canvas.style.height=`${newVH}vh`}function generateRugPattern(e,o,a){const t=[];for(let n=0;n<o;n++){const c=[];for(let t=0;t<a;t++){if(n===0||n===o-1){c.push(9)}else if(n%2===0){if(t<e||t>=a-e){c.push(9)}else{if(Math.random()<.4){const s=getRandomInt(11,14);c.push(s)}else{c.push(5)}}}else{if(t<e||t>=a-e){c.push(9)}else{if(Math.random()<.4){const s=getRandomInt(11,14);c.push(s)}else{c.push(5)}}}}t.push(c)}return t.flat()}function drawPixelatedText(d,t,n,e){const o=document.createElement("canvas");const a=o.getContext("2d");o.width=canvas.width;o.height=canvas.height;function c(t,n,e,o,a){const c=64;const s=290;const i=320;const r=355;const l=numRows/c;if(isAndroid){t.font=`${s*l*a}px 'Arial'`}else if(isIOS){t.font=`${i*l*a}px 'Arial'`}else{t.font=`${r*l*a}px 'Arial'`}t.textAlign="center";t.textBaseline="middle";t.globalAlpha=.85;t.fillText(d,e*a,o*a)}c(a,d,t*e,n*e,e,color5);const s=a.getImageData(0,0,o.width,o.height);const i=s.data;for(let t=0;t<i.length;t+=4){if(i[t+3]>0){const r=getRandomInt(-40,40);i[t]=Math.min(255,Math.max(0,i[t]+r));i[t+1]=Math.min(255,Math.max(0,i[t+1]+r));i[t+2]=Math.min(255,Math.max(0,i[t+2]+r));if(Math.random()<.5){i[t+3]=i[t+3]*getRandomInt(50,100)/100}}}a.putImageData(s,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(o,0,0,o.width,o.height,0,0,canvas.width/e,canvas.height/e)}function drawPixelArtRug(){const e=numSpaces*pixelSize;const o=canvasWidth-numSpaces*pixelSize;const a=pixelSize;const c=canvas.height-pixelSize;for(let n=0;n<rugPattern.length;n++){const s=n%rowLength*pixelSize;const i=Math.floor(n/rowLength)*pixelSize;let t=getColorFromCode(rugPattern[n]);if(rugPattern[n]===5||rugPattern[n]===6){t=adjustColorBrightness(colorMap[6],getRandomInt(-30,30))}if(i/pixelSize%2===0){if(s>=(rowLength-13)*pixelSize){drawRightFrayedEnd(s+pixelSize,i,t)}else if(s<13*pixelSize){drawLeftFrayedEnd(s,i,t)}}}for(let n=0;n<rugPattern.length;n++){const s=n%rowLength*pixelSize;const i=Math.floor(n/rowLength)*pixelSize;if(rugPattern[n]===9)continue;let t=getColorFromCode(rugPattern[n]);if([5,6,11,12,13,14].includes(rugPattern[n])){t=adjustColorBrightness(colorMap[rugPattern[n]],getRandomInt(-40,40));ctx.fillStyle=t;ctx.fillRect(s,i,pixelSize,pixelSize);ctx.setLineDash([6,4]);ctx.strokeStyle=color7;ctx.lineWidth=lW;ctx.strokeRect(e,a,o-e,c-a);ctx.setLineDash([])}}const t=canvas.width/2;var n;if(isAndroid){n=drawPixelatedText(message,t/.125,canvas.height/.235,.125,color5)}else if(isIOS){n=drawPixelatedText(message,t/.126,canvas.height/.245,.125,color5)}else{n=drawPixelatedText(message,t/.125,canvas.height/.225,.125,color5)}}function drawRightFrayedEnd(t,n,e){const o=t+pixelSize-7;for(let t=0;t<frayCount;t++){const a=getRandomInt(-1,1)*(pixelSize/4);const c=Math.PI/fR1-Math.random()*(Math.PI/fR2);const s=o+Math.cos(c)*frayLength;const i=n-10+Math.sin(c)*frayLength+a;ctx.beginPath();ctx.moveTo(o,n);ctx.lineTo(s,i);ctx.strokeStyle=e;ctx.stroke()}}function drawLeftFrayedEnd(t,n,e){const o=t-pixelSize+7;for(let t=0;t<frayCount;t++){const a=getRandomInt(-1,1)*(pixelSize/5);const c=Math.PI/fR1-Math.random()*(Math.PI/fR2);const s=o-Math.cos(c)*frayLength;const i=n-10+Math.sin(c)*frayLength+a;ctx.beginPath();ctx.moveTo(o,n);ctx.lineTo(s,i);ctx.strokeStyle=e;ctx.stroke()}}function getColorFromCode(t){return colorMap[t]}drawPixelArtRug();let timer;canvas.addEventListener("click",t=>t.detail===1&&(timer=setTimeout(()=>location.reload(),275)));canvas.addEventListener("dblclick",()=>{clearTimeout(timer);showModal()});function showModal(){const t=["1k","1kt","2k","2kt","3k","3kt","4k","4kt","8k","8kt","16k","16kt"];const e=document.createElement("div");e.className="modal";if(e){e.style.background="#000";e.style.boxShadow=`0 0 10px ${color5}`}t.forEach(t=>{const n=document.createElement("button");n.textContent=t;n.onclick=()=>{document.body.removeChild(e);scaleCanvas(parseInt(t),t.includes("t"))};e.appendChild(n);if(n){n.style.background="#000";n.style.color=color5;n.style.boxShadow=`0 0 10px ${color5}`}});document.body.appendChild(e)}function scaleCanvas(t,n){const e=canvas.width/canvas.height;const o=512*t;const a=o*e;const c=document.createElement("canvas");const s=c.getContext("2d");c.width=a;c.height=o;if(!n){s.fillStyle="#000000";s.fillRect(0,0,a,o)}const i=o/canvas.height;const r=canvas.width*i;const l=canvas.height*i;const d=(a-r)/2;const f=(o-l)/2;s.drawImage(canvas,d,f,r,l);const x=document.createElement("a");x.download=`F5RUGZ_${t}k_${n?"TP":"BLK"}.png`;x.href=c.toDataURL("image/png");x.click()}
+//initialize canvas
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+// Set canvas dimensions
+canvas.width = 3840;
+canvas.height = 2160;
 
-    function releaseCanvas(c){c.width=1;c.style.width="1vw";c.height=1;c.style.height="1vh";const x=c.getContext("2d");x&&x.clearRect(0,0,1,1);c.remove()}window.addEventListener("pagehide",()=>{Array.prototype.slice.call(document.getElementsByTagName("canvas")).forEach(releaseCanvas)});</script></body></html>
+//variables
+let startTime = Date.now();
+let fadeToColor = false;
+let fading = false;
+let explosionTriggered = false; // Prevents multiple explosions per cycle
+let nextColor;
+const text = "₳";
+const fontSize = 3072;
+const cubeSize = 20;
+const cubes = [];
+let colorChangeSpeed;
+let isAndroid = /Android/i.test(navigator.userAgent);
+let isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+let colors = [];
+let snake = [];
+let currentColorIndex = 0; // Global index of the "base" color
+
+//Set speed for devices
+if (isAndroid) {
+    colorChangeSpeed = 100; // speed in milliseconds (note: very low values may be clamped)
+} else if (isIOS) {
+    colorChangeSpeed = 100;
+} else {
+    colorChangeSpeed = 100;
+}
+
+//Cube class
+class Cube {
+    constructor(x, y, targetX, targetY, maxHoverOffset) {
+        this.x = x;
+        this.y = y;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.colorIndex = currentColorIndex; // start with the current base color
+        this.size = cubeSize;
+        this.neighbors = [];
+        this.visited = false; // marks if cube has been changed during the cycle
+        this.hoverOffsetX = (Math.random() - 0.5) * maxHoverOffset;
+        this.hoverOffsetY = (Math.random() - 0.5) * maxHoverOffset;
+        this.maxHoverOffset = maxHoverOffset;
+    }
+    draw() {
+        ctx.fillStyle = colors[this.colorIndex];
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.fillStyle = 'rgba(0,0,0,.7)';
+        ctx.fillRect(this.x + this.size * 0.1, this.y + this.size * 0.1, this.size, this.size);
+    }
+    update() {
+        const speed = 0.02;
+        const hoverDistance = 6;
+        if (Math.random() < 0.1) {
+            this.hoverOffsetX = (Math.random() - 0.5) * this.maxHoverOffset;
+            this.hoverOffsetY = (Math.random() - 0.5) * this.maxHoverOffset;
+        }
+        const targetX = this.targetX + this.hoverOffsetX;
+        const targetY = this.targetY + this.hoverOffsetY;
+        const deltaX = targetX - this.x;
+        const deltaY = targetY - this.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (distance > hoverDistance) {
+            this.x += (deltaX / distance) * speed * distance;
+            this.y += (deltaY / distance) * speed * distance;
+        }
+    }
+    changeColor() {
+        // Cycle cube's color from its current value
+        this.colorIndex = (this.colorIndex + 1) % colors.length;
+    }
+    fadeToSingleColor(targetColorIndex, alpha) {
+        const currentRGB = colors[this.colorIndex].match(/\d+/g).map(Number);
+        const targetRGB = colors[targetColorIndex].match(/\d+/g).map(Number);
+        const newRGB = currentRGB.map((c, i) => Math.floor(c + (targetRGB[i] - c) * alpha));
+        this.colorIndex = colors.findIndex(
+            color => color === `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`
+        );
+        if (this.colorIndex === -1) {
+            colors.push(`rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+            this.colorIndex = colors.length - 1;
+        }
+    }
+}
+
+function getRandomColor(excludeColor) {
+    let color;
+    do {
+        color = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+    } while (color === excludeColor);
+    return color;
+}
+
+// Fixed palette: red, white, blue
+function assignRandomColors() {
+    colors = [
+        "rgb(255, 0, 0)",    // red
+        "rgb(255, 255, 255)",// white
+        "rgb(0, 0, 255)"     // blue
+    ];
+    // Set initial base color to red (index 0)
+    currentColorIndex = 0;
+}
+
+function initCubes() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `${fontSize}px Arial`;
+    const textWidth = ctx.measureText(text).width;
+    const textHeight = fontSize;
+    const startX = (canvas.width - textWidth) / 2;
+    const startY = (canvas.height + textHeight) / 2.375;
+    const offsets = [
+        { x: 0, y: 0 },
+        { x: 30, y: 0 },
+        { x: -30, y: 0 },
+        { x: 0, y: 30 },
+        { x: 0, y: -30 },
+        { x: 15, y: 15 },
+        { x: -15, y: -15 },
+        { x: 15, y: -15 },
+        { x: -15, y: 15 }
+    ];
+
+
+    // Draw the text in black then in the main color (currentColorIndex)
+    ctx.fillStyle = 'black';
+    ctx.fillText(text, startX, startY);
+    offsets.forEach(offset => {
+        ctx.fillStyle = colors[currentColorIndex];
+        ctx.fillText(text, startX + offset.x, startY + offset.y);
+    });
+    const textData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let y = 0; y < canvas.height; y += cubeSize) {
+        for (let x = 0; x < canvas.width; x += cubeSize) {
+            const index = (y * canvas.width + x) * 4;
+            if (textData[index + 3] > 128) {
+                let maxHoverOffset = isAndroid ? 3000 : (isIOS ? 2000 : 3000);
+                const cube = new Cube(x, y, x, y, maxHoverOffset);
+                cubes.push(cube);
+            }
+        }
+    }
+    cubes.forEach(cube => {
+        cube.neighbors = cubes.filter(other =>
+            other !== cube &&
+            Math.abs(other.targetX - cube.targetX) <= cubeSize &&
+            Math.abs(other.targetY - cube.targetY) <= cubeSize
+        );
+    });
+}
+
+const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); // Horizontal gradient
+function getRandomRange(min, max) {
+       return Math.random() * (max - min) + min;
+   }
+   let redStop = getRandomRange(0.15, 0.25);  // Red stops earlier
+               let whiteStopStart = redStop + getRandomRange(0.05, 0.10); // White starts soon after red
+               let whiteStopEnd = whiteStopStart + getRandomRange(0.15, 0.25); // White stays longer
+               let blueStop = getRandomRange(whiteStopEnd + 0.05, 1.0); // Blue starts later
+
+               gradient.addColorStop(0, "red");
+               gradient.addColorStop(redStop, "red");
+               gradient.addColorStop(whiteStopStart, "white");
+               gradient.addColorStop(whiteStopEnd, "white");
+               gradient.addColorStop(blueStop, "blue");
+               gradient.addColorStop(1, "blue");
+
+function animate() {
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    cubes.forEach(cube => {
+        cube.update();
+        cube.draw();
+    });
+    requestAnimationFrame(animate);
+}
+
+function waveColorChange() {
+    const snakeSize = 50;
+    if (!fading) {
+        if (snake.length === 0) {
+            const randomCube = cubes[Math.floor(Math.random() * cubes.length)];
+            snake.push(randomCube);
+            randomCube.visited = true;
+        }
+        for (let i = 0; i < snake.length; i++) {
+            const cube = snake[i];
+            cube.changeColor();
+            const neighbors = cube.neighbors.filter(neighbor => !neighbor.visited);
+            if (neighbors.length > 0) {
+                const nextCube = neighbors[Math.floor(Math.random() * neighbors.length)];
+                snake[i] = nextCube;
+                nextCube.visited = true;
+            } else {
+                snake.splice(i, 1);
+                i--;
+            }
+        }
+        while (snake.length < snakeSize) {
+            const lastCube = snake[snake.length - 1];
+            let nextCube;
+            const potentialNeighbors = lastCube.neighbors.filter(cube => !cube.visited);
+            if (potentialNeighbors.length > 0) {
+                nextCube = potentialNeighbors[Math.floor(Math.random() * potentialNeighbors.length)];
+            } else {
+                nextCube = lastCube.neighbors[Math.floor(Math.random() * lastCube.neighbors.length)];
+            }
+            if (nextCube) {
+                snake.push(nextCube);
+                nextCube.visited = true;
+            } else {
+                break;
+            }
+        }
+        if (snake.length === 0) {
+            const randomCube = cubes[Math.floor(Math.random() * cubes.length)];
+            snake.push(randomCube);
+            randomCube.visited = true;
+        }
+    }
+
+    // Use currentColorIndex as the base.
+    const changedCount = cubes.filter(cube => cube.colorIndex !== currentColorIndex).length;
+    if ((Date.now() - startTime >= 15000 || (changedCount / cubes.length) >= 0.95) && !fading && !explosionTriggered) {
+        explosionTriggered = true;
+        // Do not clear the canvas here so explosion trails remain
+        fadeToColor = true;
+        fadeStartTime = Date.now();
+        // Force next color to be the next in the cycle (red→white→blue→red...)
+        nextColor = (currentColorIndex + 1) % colors.length;
+        fading = true;
+        snake = [];
+        cubes.forEach(cube => {
+            cube.visited = false;
+            cube.colorIndex = nextColor;
+        });
+    }
+
+    // Explosion (fading) phase
+    if (fadeToColor) {
+        const fadeDuration = 1000; // 2 seconds fade
+        const elapsedTime = Date.now() - fadeStartTime;
+        const alpha = Math.min(elapsedTime / fadeDuration, 1);
+        cubes.forEach(cube => {
+            cube.fadeToSingleColor(nextColor, alpha);
+            if (isAndroid) {
+                cube.maxHoverOffset = 2200 - (2170 * alpha);
+            } else if (isIOS) {
+                cube.maxHoverOffset = 1200 - (1170 * alpha);
+            } else {
+                cube.maxHoverOffset = 2200 - (2170 * alpha);
+            }
+        });
+        if (elapsedTime >= fadeDuration) {
+            fadeToColor = false;
+            fading = false;
+            explosionTriggered = false;
+            startTime = Date.now();
+            // Update the base color for the next cycle:
+            currentColorIndex = nextColor;
+        }
+    }
+
+    // After explosion, spread cubes out if 15 seconds have passed and not fading.
+    if (!fading && Date.now() - startTime >= 15000) {
+        const maxRadius = Math.min(canvas.width, canvas.height) / 2;
+        const center = { x: canvas.width / 2, y: canvas.height / 2 };
+        cubes.forEach(cube => {
+            const deltaX = cube.x - center.x;
+            const deltaY = cube.y - center.y;
+            const angle = Math.atan2(deltaY, deltaX);
+            cube.targetX = center.x + Math.cos(angle) * maxRadius;
+            cube.targetY = center.y + Math.sin(angle) * maxRadius;
+            cube.colorIndex = Math.floor(Math.random() * colors.length);
+        });
+    }
+}
+
+function updateCubes() {
+    const fadeDuration = 1000;
+    const elapsedTime = Date.now() - startTime;
+    const alpha = Math.min(elapsedTime / fadeDuration, 1);
+    cubes.forEach(cube => {
+      if (isAndroid) {
+          cube.maxHoverOffset = 2200 - (2170 * alpha);
+      } else if (isIOS) {
+          cube.maxHoverOffset = 1200 - (1170 * alpha);
+      } else {
+          cube.maxHoverOffset = 2200 - (2170 * alpha);
+      }
+    });
+    if (elapsedTime < fadeDuration) {
+        requestAnimationFrame(updateCubes);
+    }
+}
+
+// Initial drawing
+ctx.fillStyle = 'black';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Initialize and start animation
+assignRandomColors();
+initCubes();
+updateCubes();
+animate();
+setInterval(waveColorChange, colorChangeSpeed);
+
+// Reload on canvas click
+
+function attachCanvasEventListeners() {
+    canvas.addEventListener('click', event => {
+        if (event.detail === 1) {
+            setTimeout(() => { location.reload(); }, 275);
+        }
+    });
+    canvas.addEventListener('dblclick', event => {
+        clearTimeout();
+        event.preventDefault();
+        const link = document.createElement('a');
+        link.download = 'USADA.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+
+function initCanvas() {
+    attachCanvasEventListeners();
+}
+
+initCanvas();
+setTimeout(() => {
+    initCanvas();
+}, 15000);
+
+
+
+/*Run release even when they refresh not with click (F5, refresh button, closing page)*/
+      window.addEventListener('pagehide', (event) => {
+      /*Release every canvas*/
+      var canvases = document.getElementsByTagName("canvas");
+      var canvasesList = Array.prototype.slice.call(canvases);
+            canvasesList.forEach(releaseCanvas);
+      });
+
+</script>
+</body>
+</html>
