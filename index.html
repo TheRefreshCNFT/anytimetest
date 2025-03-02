@@ -342,22 +342,16 @@ animate();
 setInterval(waveColorChange, colorChangeSpeed);
 
 // Reload on canvas click
+let timer;
+        canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
 
-function attachCanvasEventListeners() {
-    canvas.addEventListener('click', event => {
-        if (event.detail === 1) {
-            setTimeout(() => { location.reload(); }, 275);
-        }
-    });
-    canvas.addEventListener('dblclick', event => {
-        clearTimeout();
-        event.preventDefault();
-        const link = document.createElement('a');
-        link.download = 'USADA.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    });
-}
+        canvas.addEventListener("dblclick", () => {
+          clearTimeout(timer);
+    const link = document.createElement('a');
+    link.download = 'USADA.png';
+    link.href = canvas.toDataURL();
+    link.click();
+});
 
 
 function initCanvas() {
