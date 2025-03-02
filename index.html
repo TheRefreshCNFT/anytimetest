@@ -85,8 +85,8 @@ class Cube {
         ctx.fillRect(this.x + this.size * 0.1, this.y + this.size * 0.1, this.size, this.size);
     }
     update() {
-        const speed = 0.02;
-        const hoverDistance = 6;
+        const speed = 0.03;
+        const hoverDistance = 5;
         if (Math.random() < 0.1) {
             this.hoverOffsetX = (Math.random() - 0.5) * this.maxHoverOffset;
             this.hoverOffsetY = (Math.random() - 0.5) * this.maxHoverOffset;
@@ -280,11 +280,11 @@ function waveColorChange() {
         cubes.forEach(cube => {
             cube.fadeToSingleColor(nextColor, alpha);
             if (isAndroid) {
-                cube.maxHoverOffset = 2200 - (2170 * alpha);
+                cube.maxHoverOffset = 2600 - (2570 * alpha);
             } else if (isIOS) {
-                cube.maxHoverOffset = 1200 - (1170 * alpha);
+                cube.maxHoverOffset = 1700 - (1670 * alpha);
             } else {
-                cube.maxHoverOffset = 2200 - (2170 * alpha);
+                cube.maxHoverOffset = 2600 - (2570 * alpha);
             }
         });
         if (elapsedTime >= fadeDuration) {
@@ -318,11 +318,11 @@ function updateCubes() {
     const alpha = Math.min(elapsedTime / fadeDuration, 1);
     cubes.forEach(cube => {
       if (isAndroid) {
-          cube.maxHoverOffset = 2200 - (2170 * alpha);
+          cube.maxHoverOffset = 2600 - (2570 * alpha);
       } else if (isIOS) {
-          cube.maxHoverOffset = 1200 - (1170 * alpha);
+          cube.maxHoverOffset = 1700 - (1670 * alpha);
       } else {
-          cube.maxHoverOffset = 2200 - (2170 * alpha);
+          cube.maxHoverOffset = 2600 - (2570 * alpha);
       }
     });
     if (elapsedTime < fadeDuration) {
