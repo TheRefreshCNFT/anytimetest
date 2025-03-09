@@ -94,7 +94,19 @@
   function resizeCanvases() {
     width = window.innerWidth;
     height = window.innerHeight;
-    const DESIGN_DIAMETER = height*1.25; // roughly 2 * (450 + 325*1.3)
+
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+let DESIGN_DIAMETER; // Declare
+
+if (isAndroid) {
+    DESIGN_DIAMETER = height*1.25;
+} else if (isIOS) {
+    DESIGN_DIAMETER = height*2.25;
+
+} else {
+    DESIGN_DIAMETER = height*1.25;
+}
 
     scaleFactor = Math.min(1, Math.min(width, height) / DESIGN_DIAMETER);
 
@@ -656,6 +668,7 @@ function Drip(startX, startY, blotch, dripColor, initialOpacity) {
                link.href = offscreenCanvas.toDataURL('image/png');
                link.click();
              }
+             function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
 
   </script>
 </body>
