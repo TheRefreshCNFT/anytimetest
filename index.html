@@ -1,373 +1,662 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <!-- Responsive viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-      body {
-          margin: 0;
-          overflow: hidden;
-          background-color: #000000;
-      }
-      canvas {
-          display: block;
-      }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #111;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #555; padding: 20px; border-radius: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    box-shadow: 0 0 20px #018dbe; z-index: 10;
+}
+.modal button {
+    padding: 10px; background: #000; color: #018dbe; border: none;
+    font-weight: bold; cursor: pointer; box-shadow: 0 0 10px #018dbe;
+}
+
   </style>
 </head>
 <body>
-
-  <canvas id="canvas" style="object-fit: contain; width: 100vw; height: 100vh;"></canvas>
+  <!-- Background canvas for blotches -->
+  <canvas id="bgCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+  <!-- Foreground canvas for drips -->
+  <canvas id="canvas" style="position: absolute; top: 0; left: 0;"></canvas>
 
   <script>
-  const text = "₳";
-  const chng = .95;//.7-.95
-  const cubeSize = 20;
-  let redStop = getRandomRange(0.15, 0.25);  // Red stops earlier
-  let whiteStopStart = redStop + getRandomRange(0.05, 0.10); // White starts soon after red
-  let whiteStopEnd = whiteStopStart + getRandomRange(0.15, 0.25); // White stays longer
-  let blueStop = getRandomRange(whiteStopEnd + 0.05, 1.0); // Blue starts later
+  /***** CONSTANTS – adjust these to control the look *****/
+  const BLOTCH_COUNT = 12;        // Total number of blotches
+  const DRIP_COUNT = 3;          // Number of drips per blotch
+  let specialColor = "#524565";
 
-/*Release canvas from memory*/
-function releaseCanvas(canvas) {
-canvas.width = 1;
-canvas.style.width = "1vw";
-canvas.height = 1;
-canvas.style.height = "1vh";
-const ctx = canvas.getContext('2d');
-ctx && ctx.clearRect(0, 0, 1, 1);
-canvas.remove();
-}
+  // Two color banks
+  const ALWAYS_SHOW_COLORS = [
+        "#137d82",
+            "#e7ae5f",
 
-//initialize canvas
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-// Set canvas dimensions
-canvas.width = 3840;
-canvas.height = 2160;
+  ];
+  const MAIN_COLORS = [
+    "#137d82"
 
-//variables
-let startTime = Date.now();
-let fadeToColor = false;
-let fading = false;
-let explosionTriggered = false; // Prevents multiple explosions per cycle
-let nextColor;
-const fontSize = 3072;
-const cubes = [];
-let isAndroid = /Android/i.test(navigator.userAgent);
-let isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-let colors = [];
-let snake = [];
-let currentColorIndex = 0; // Global index of the "base" color
-const colorChangeSpeed = 100;
+  ];
+
+  const BLOTCH_MIN_RADIUS = 75;   // Minimum size of a blotch
+  const BLOTCH_MAX_RADIUS = 800;   // Maximum size of a blotch
+  const BLOTCH_POINT_COUNT = 55;   // Points for irregular shape 42
+
+  // Drip parameters
+  const DRIP_BASE_WIDTH = 3;         // Starting line width for drip strokes
+  const DRIP_FADE_TIME = 60000;       // Time in ms for drip fade
+  const DRIP_UPDATE_INTERVAL = 50;    // Time between drip updates
+  const DRIP_X_VARIATION = 0.5;        // Maximum horizontal shift per update
+  const DRIP_Y_VARIATION = [0.25, 0.75];  // Range for vertical movement
+
+  /***** NEW CONSTANTS FOR BRUSH STROKES *****/
+  const BRUSH_STROKE_COUNT = 950;   // Number of brush strokes per blotch
+  const BRUSH_BASE_WIDTH = .95;    // Base line width for brush strokes
+
+  // Constants for spacing between blotches:
+  const MIN_BLOTCH_DISTANCE = 150;
+  const MAX_BLOTCH_DISTANCE = 975;
+
+  // Global flow angle for all strokes (roughly downward).
+  const GLOBAL_FLOW_ANGLE = Math.PI / 2 + (Math.random() - 0.5) * 0.7;
+
+  // Maximum spread for candidate positions.
+  const SPREAD_RADIUS = 900;
 
 
-//Cube class
-class Cube {
-    constructor(x, y, targetX, targetY, maxHoverOffset) {
-        this.x = x;
-        this.y = y;
-        this.targetX = targetX;
-        this.targetY = targetY;
-        this.colorIndex = currentColorIndex; // start with the current base color
-        this.size = cubeSize;
-        this.neighbors = [];
-        this.visited = false; // marks if cube has been changed during the cycle
-        this.hoverOffsetX = (Math.random() - 0.5) * maxHoverOffset;
-        this.hoverOffsetY = (Math.random() - 0.5) * maxHoverOffset;
-        this.maxHoverOffset = maxHoverOffset;
+  /***** GLOBAL VARIABLES *****/
+  let bgCanvas, canvas, bgCtx, dripCtx;
+  let width, height;
+  let blotches = [];
+  let drips = [];
+  let scaleFactor = 1;  // Global scaling factor
+
+  // This array will hold exactly the unique HEX values that were locked in when each blotch finished drawing.
+  let loadedBlotchColors = [];
+
+  let initialized = false;  // global flag to ensure init() runs only once
+
+  function resizeCanvases() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    const DESIGN_DIAMETER = height*1.25; // roughly 2 * (450 + 325*1.3)
+
+    scaleFactor = Math.min(1, Math.min(width, height) / DESIGN_DIAMETER);
+
+    effectiveSPREAD_RADIUS     = SPREAD_RADIUS * scaleFactor;
+    effectiveBLOTCH_MIN_RADIUS = BLOTCH_MIN_RADIUS * scaleFactor;
+    effectiveBLOTCH_MAX_RADIUS = BLOTCH_MAX_RADIUS * scaleFactor;
+    effectiveMIN_BLOTCH_DISTANCE = MIN_BLOTCH_DISTANCE * scaleFactor;
+    effectiveMAX_BLOTCH_DISTANCE = MAX_BLOTCH_DISTANCE * scaleFactor;
+    effectiveDRIP_BASE_WIDTH   = DRIP_BASE_WIDTH * scaleFactor;
+    effectiveDRIP_X_VARIATION  = DRIP_X_VARIATION * scaleFactor;
+    effectiveDRIP_Y_VARIATION  = [DRIP_Y_VARIATION[0] * scaleFactor, DRIP_Y_VARIATION[1] * scaleFactor];
+    effectiveBRUSH_BASE_WIDTH  = BRUSH_BASE_WIDTH * scaleFactor;
+
+    bgCanvas.width = width;
+    bgCanvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Only call init() the first time
+    if (!initialized) {
+      init();
+      initialized = true;
     }
-    draw() {
-        ctx.fillStyle = colors[this.colorIndex];
-        ctx.fillRect(this.x, this.y, this.size, this.size);
-        ctx.fillStyle = 'rgba(0,0,0,.7)';
-        ctx.fillRect(this.x + this.size * 0.1, this.y + this.size * 0.1, this.size, this.size);
-    }
-    update() {
-        const speed = 0.03;
-        const hoverDistance = 5;
-        if (Math.random() < 0.1) {
-            this.hoverOffsetX = (Math.random() - 0.5) * this.maxHoverOffset;
-            this.hoverOffsetY = (Math.random() - 0.5) * this.maxHoverOffset;
-        }
-        const targetX = this.targetX + this.hoverOffsetX;
-        const targetY = this.targetY + this.hoverOffsetY;
-        const deltaX = targetX - this.x;
-        const deltaY = targetY - this.y;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance > hoverDistance) {
-            this.x += (deltaX / distance) * speed * distance;
-            this.y += (deltaY / distance) * speed * distance;
-        }
-    }
-    changeColor() {
-        // Cycle cube's color from its current value
-        this.colorIndex = (this.colorIndex + 1) % colors.length;
-    }
-    fadeToSingleColor(targetColorIndex, alpha) {
-        const currentRGB = colors[this.colorIndex].match(/\d+/g).map(Number);
-        const targetRGB = colors[targetColorIndex].match(/\d+/g).map(Number);
-        const newRGB = currentRGB.map((c, i) => Math.floor(c + (targetRGB[i] - c) * alpha));
-        this.colorIndex = colors.findIndex(
-            color => color === `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`
-        );
-        if (this.colorIndex === -1) {
-            colors.push(`rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
-            this.colorIndex = colors.length - 1;
-        }
-    }
-}
+    drawBlotches();
+  }
 
-function getRandomColor(excludeColor) {
-    let color;
-    do {
-        color = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
-    } while (color === excludeColor);
-    return color;
-}
+  window.addEventListener("resize", resizeCanvases);
 
-// Fixed palette: red, white, blue
-function assignRandomColors() {
-    colors = [
-        "rgb(255, 0, 0)",    // red
-        "rgb(255, 255, 255)",// white
-        "rgb(0, 0, 255)"     // blue
-    ];
-    // Set initial base color to red (index 0)
-    currentColorIndex = 0;
-}
-
-function initCubes() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = `${fontSize}px Arial`;
-    const textWidth = ctx.measureText(text).width;
-    const textHeight = fontSize;
-    const startX = (canvas.width - textWidth) / 2;
-    const startY = (canvas.height + textHeight) / 2.375;
-    const offsets = [
-        { x: 0, y: 0 },
-        { x: 30, y: 0 },
-        { x: -30, y: 0 },
-        { x: 0, y: 30 },
-        { x: 0, y: -30 },
-        { x: 15, y: 15 },
-        { x: -15, y: -15 },
-        { x: 15, y: -15 },
-        { x: -15, y: 15 }
-    ];
-
-
-    // Draw the text in black then in the main color (currentColorIndex)
-    ctx.fillStyle = 'black';
-    ctx.fillText(text, startX, startY);
-    offsets.forEach(offset => {
-        ctx.fillStyle = colors[currentColorIndex];
-        ctx.fillText(text, startX + offset.x, startY + offset.y);
-    });
-    const textData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    for (let y = 0; y < canvas.height; y += cubeSize) {
-        for (let x = 0; x < canvas.width; x += cubeSize) {
-            const index = (y * canvas.width + x) * 4;
-            if (textData[index + 3] > 128) {
-                let maxHoverOffset = isAndroid ? 3000 : (isIOS ? 2000 : 3000);
-                const cube = new Cube(x, y, x, y, maxHoverOffset);
-                cubes.push(cube);
-            }
-        }
-    }
-    cubes.forEach(cube => {
-        cube.neighbors = cubes.filter(other =>
-            other !== cube &&
-            Math.abs(other.targetX - cube.targetX) <= cubeSize &&
-            Math.abs(other.targetY - cube.targetY) <= cubeSize
-        );
-    });
-}
-
-const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); // Horizontal gradient
-function getRandomRange(min, max) {
-       return Math.random() * (max - min) + min;
-   }
-
-
-               gradient.addColorStop(0, "red");
-               gradient.addColorStop(redStop, "red");
-               gradient.addColorStop(whiteStopStart, "white");
-               gradient.addColorStop(whiteStopEnd, "white");
-               gradient.addColorStop(blueStop, "blue");
-               gradient.addColorStop(1, "blue");
-
-function animate() {
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    cubes.forEach(cube => {
-        cube.update();
-        cube.draw();
-    });
-    requestAnimationFrame(animate);
-}
-
-function waveColorChange() {
-    const snakeSize = 50;
-    if (!fading) {
-        if (snake.length === 0) {
-            const randomCube = cubes[Math.floor(Math.random() * cubes.length)];
-            snake.push(randomCube);
-            randomCube.visited = true;
-        }
-        for (let i = 0; i < snake.length; i++) {
-            const cube = snake[i];
-            cube.changeColor();
-            const neighbors = cube.neighbors.filter(neighbor => !neighbor.visited);
-            if (neighbors.length > 0) {
-                const nextCube = neighbors[Math.floor(Math.random() * neighbors.length)];
-                snake[i] = nextCube;
-                nextCube.visited = true;
-            } else {
-                snake.splice(i, 1);
-                i--;
-            }
-        }
-        while (snake.length < snakeSize) {
-            const lastCube = snake[snake.length - 1];
-            let nextCube;
-            const potentialNeighbors = lastCube.neighbors.filter(cube => !cube.visited);
-            if (potentialNeighbors.length > 0) {
-                nextCube = potentialNeighbors[Math.floor(Math.random() * potentialNeighbors.length)];
-            } else {
-                nextCube = lastCube.neighbors[Math.floor(Math.random() * lastCube.neighbors.length)];
-            }
-            if (nextCube) {
-                snake.push(nextCube);
-                nextCube.visited = true;
-            } else {
-                break;
-            }
-        }
-        if (snake.length === 0) {
-            const randomCube = cubes[Math.floor(Math.random() * cubes.length)];
-            snake.push(randomCube);
-            randomCube.visited = true;
-        }
-    }
-
-    // Use currentColorIndex as the base.
-    const changedCount = cubes.filter(cube => cube.colorIndex !== currentColorIndex).length;
-    if ((Date.now() - startTime >= 15000 || (changedCount / cubes.length) >= chng) && !fading && !explosionTriggered) {
-        explosionTriggered = true;
-        // Do not clear the canvas here so explosion trails remain
-        fadeToColor = true;
-        fadeStartTime = Date.now();
-        // Force next color to be the next in the cycle (red→white→blue→red...)
-        nextColor = (currentColorIndex + 1) % colors.length;
-        fading = true;
-        snake = [];
-        cubes.forEach(cube => {
-            cube.visited = false;
-            cube.colorIndex = nextColor;
-        });
-    }
-
-    // Explosion (fading) phase
-    if (fadeToColor) {
-        const fadeDuration = 1000; // 2 seconds fade
-        const elapsedTime = Date.now() - fadeStartTime;
-        const alpha = Math.min(elapsedTime / fadeDuration, 1);
-        cubes.forEach(cube => {
-            cube.fadeToSingleColor(nextColor, alpha);
-            if (isAndroid) {
-                cube.maxHoverOffset = 2600 - (2570 * alpha);
-            } else if (isIOS) {
-                cube.maxHoverOffset = 1700 - (1670 * alpha);
-            } else {
-                cube.maxHoverOffset = 2600 - (2570 * alpha);
-            }
-        });
-        if (elapsedTime >= fadeDuration) {
-            fadeToColor = false;
-            fading = false;
-            explosionTriggered = false;
-            startTime = Date.now();
-            // Update the base color for the next cycle:
-            currentColorIndex = nextColor;
-        }
-    }
-
-    // After explosion, spread cubes out if 15 seconds have passed and not fading.
-    if (!fading && Date.now() - startTime >= 15000) {
-        const maxRadius = Math.min(canvas.width, canvas.height) / 2;
-        const center = { x: canvas.width / 2, y: canvas.height / 2 };
-        cubes.forEach(cube => {
-            const deltaX = cube.x - center.x;
-            const deltaY = cube.y - center.y;
-            const angle = Math.atan2(deltaY, deltaX);
-            cube.targetX = center.x + Math.cos(angle) * maxRadius;
-            cube.targetY = center.y + Math.sin(angle) * maxRadius;
-            cube.colorIndex = Math.floor(Math.random() * colors.length);
-        });
-    }
-}
-
-function updateCubes() {
-    const fadeDuration = 1000;
-    const elapsedTime = Date.now() - startTime;
-    const alpha = Math.min(elapsedTime / fadeDuration, 1);
-    cubes.forEach(cube => {
-      if (isAndroid) {
-          cube.maxHoverOffset = 2600 - (2570 * alpha);
-      } else if (isIOS) {
-          cube.maxHoverOffset = 1700 - (1670 * alpha);
+  /***** COLOR SELECTION HELPER *****/
+  // This function simply returns one random HEX value per call based on our logic.
+  function getBlotchColor(index, total) {
+      let chosen;
+      if (total === 4) {
+          if (index === 0) {
+              chosen = ALWAYS_SHOW_COLORS[Math.floor(Math.random() * ALWAYS_SHOW_COLORS.length)];
+          } else {
+              chosen = (Math.random() < 0.25) ?
+                  ALWAYS_SHOW_COLORS[Math.floor(Math.random() * ALWAYS_SHOW_COLORS.length)] :
+                  MAIN_COLORS[Math.floor(Math.random() * MAIN_COLORS.length)];
+          }
       } else {
-          cube.maxHoverOffset = 2600 - (2570 * alpha);
+          let combined = ALWAYS_SHOW_COLORS.concat(MAIN_COLORS).filter(color => color !== "#010101"); // Exclude #900606
+          chosen = combined[Math.floor(Math.random() * combined.length)];
       }
-    });
-    if (elapsedTime < fadeDuration) {
-        requestAnimationFrame(updateCubes);
+      return chosen;
+  }
+
+  /***** BLOTCH OBJECT – irregular shape with “brush stroke” fill *****/
+  function Blotch(x, y, radius, color) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    // The color passed in is the one we want to lock in.
+    this.color = color;
+    // Save the final color independently.
+    this.finalColor = color;
+    this.points = [];
+    this.generateShape();
+    this.flowAngle = GLOBAL_FLOW_ANGLE + (Math.random() - 0.5) * 0.1;
+  }
+
+  Blotch.prototype.generateShape = function() {
+    const pointCount = BLOTCH_POINT_COUNT;
+    const angleStep = (Math.PI * 2) / pointCount;
+    let factors = [];
+    for (let i = 0; i < pointCount; i++) {
+      factors.push(0.7 + Math.random() * 0.6);
     }
+    let smoothFactors = [];
+    for (let i = 0; i < pointCount; i++) {
+      let prev = factors[(i - 1 + pointCount) % pointCount];
+      let curr = factors[i];
+      let next = factors[(i + 1) % pointCount];
+      smoothFactors.push((prev + curr + next) / 7);
+    }
+    for (let i = 0; i < pointCount; i++) {
+      let angle = i * angleStep;
+      let r = this.radius * smoothFactors[i];
+      let px = this.x + Math.cos(angle) * r;
+      let py = this.y + Math.sin(angle) * r;
+      this.points.push({ x: px, y: py });
+    }
+  };
+
+  Blotch.prototype.draw = function(ctx) {
+    ctx.save();
+
+    // Create the blotch path
+    let path = new Path2D();
+    path.moveTo(this.points[0].x, this.points[0].y);
+    for (let i = 1; i < this.points.length; i++) {
+      path.lineTo(this.points[i].x, this.points[i].y);
+    }
+    path.closePath();
+
+    // Clip the drawing area to the blotch path
+    ctx.clip(path);
+
+    // Fill the blotch with a semi-transparent black
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 0.23 * (this.radius / effectiveBLOTCH_MAX_RADIUS);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw brush strokes within the clipped area
+    for (let i = 0; i < BRUSH_STROKE_COUNT; i++) {
+      let randAngle = Math.random() * 2 * Math.PI;
+      let randDist = Math.random() * this.radius;
+      let sx = this.x + Math.cos(randAngle) * randDist;
+      let sy = this.y + Math.sin(randAngle) * randDist;
+      if (!ctx.isPointInPath(path, sx, sy)) {
+        i--;
+        continue;
+      }
+      let strokeAngle = this.flowAngle + (Math.random() - 0.5) * 0.05;
+      let strokeLength = this.radius / 4 + Math.random() * (this.radius / 2);
+      let lineWidth = effectiveBRUSH_BASE_WIDTH + (Math.random() - 0.5) * 0.1;
+      drawBrushStrokeGroup(ctx, sx, sy, strokeAngle, strokeLength, this.color, lineWidth);
+    }
+
+    // Remove the clipping
+    ctx.restore();
+
+    // Draw the border around the blotch
+    ctx.strokeStyle = '#000000'; // Set the border color
+    ctx.lineWidth = 8; // Set the border thickness
+    ctx.stroke(path); // Stroke the path to draw the border
+
+    // Apply pixel shifter to the entire canvas AFTER drawing the border
+    pixelShifter(ctx, 0, 0, width, height, 8, this.radius);
+  };
+
+  /***** Helper Function: Adjust color brightness *****/
+  function adjustColor(hex, factor) {
+    hex = hex.replace("#", "");
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    r = Math.min(255, Math.max(0, Math.floor(r * factor)));
+    g = Math.min(255, Math.max(0, Math.floor(g * factor)));
+    b = Math.min(255, Math.max(0, Math.floor(b * factor)));
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  /***** Helper Function: Draw a single bristle line *****/
+  function drawBristle(ctx, startX, startY, angle, length, baseColor, lineWidth) {
+    let jitterAngle = angle + (Math.random() - 0.5) * 0.05;
+    let jitterLength = length * (0.95 + Math.random() * 0.1);
+    let endX = startX + Math.cos(jitterAngle) * jitterLength;
+    let endY = startY + Math.sin(jitterAngle) * jitterLength;
+    const stops = 20;
+    let grad = ctx.createLinearGradient(startX, startY, endX, endY);
+    for (let i = 0; i < stops; i++) {
+      let t = i / (stops - 1);
+      let factor = 1 + 0.3 * Math.sin(t * Math.PI);
+      factor += (Math.random() - 0.5) * 0.05;
+      grad.addColorStop(t, adjustColor(baseColor, factor));
+    }
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  }
+
+  /***** Helper Function: Draw a brush stroke group (multiple bristles) *****/
+  function drawBrushStrokeGroup(ctx, startX, startY, angle, length, baseColor, lineWidth) {
+    let numBristles = 30 + Math.floor(Math.random() * 4);
+    let maxOffset = lineWidth * 5000;
+    for (let i = 0; i < numBristles; i++) {
+      let offset = (Math.random() - 0.5) * maxOffset;
+      let offsetX = startX + Math.cos(angle + Math.PI / 2) * offset;
+      let offsetY = startY + Math.sin(angle + Math.PI / 2) * offset;
+      drawBristle(ctx, offsetX, offsetY, angle, length, baseColor, lineWidth * 0.8);
+    }
+  }
+
+  // Random integer function
+const randInt = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
+const pixelShifter = function(context, x, y, w, h, amt) {
+  let img = context.getImageData(x, y, w, h);
+  let directions = [-w, w, -2, 2, -w + 2, -w - 2, w + 2, w - 2];
+
+  const shift = function(dark) {
+    let x = randInt(1, w - 2);
+    let y = randInt(1, h - 2);
+    let index = (x + (y * w)) * 5;
+    let newIndex = index + (directions[randInt(0, directions.length - 1)] * 4);
+
+    let r = img.data[index];
+    let g = img.data[index + 1];
+    let b = img.data[index + 2];
+
+    let newr = img.data[newIndex];
+    let newg = img.data[newIndex + 1];
+    let newb = img.data[newIndex + 2];
+
+    let lum = r + g + b;
+    let newLum = newr + newg + newb;
+
+    if (lum > newLum) {
+      if (dark) {
+        img.data[index] = newr;
+        img.data[index + 1] = newg;
+        img.data[index + 2] = newb;
+      } else {
+        img.data[newIndex] = r;
+        img.data[newIndex + 1] = g;
+        img.data[newIndex + 2] = b;
+      }
+    }
+  };
+
+  // Darker pixels
+  for (let j = 0; j < amt; j++) {
+    for (let i = 0; i < w * h * 0.15; i++) {
+      shift(true);
+    }
+  }
+
+  // Lighter pixels
+  for (let j = 0; j < amt; j++) {
+    for (let i = 0; i < w * h * 0.32; i++) {
+      shift(false);
+    }
+  }
+
+  context.putImageData(img, x, y);
+};
+
+
+  // Helper: Generate a random point inside a blotch.
+  function getRandomPointInBlotch(blotch) {
+    let path = new Path2D();
+    path.moveTo(blotch.points[0].x, blotch.points[0].y);
+    for (let i = 1; i < blotch.points.length; i++) {
+      path.lineTo(blotch.points[i].x, blotch.points[i].y);
+    }
+    path.closePath();
+    let p;
+    do {
+      let randAngle = Math.random() * 2 * Math.PI;
+      let randDist = Math.random() * blotch.radius;
+      let sx = blotch.x + Math.cos(randAngle) * randDist;
+      let sy = blotch.y + Math.sin(randAngle) * randDist;
+      p = { x: sx, y: sy };
+    } while (!bgCtx.isPointInPath(path, p.x, p.y));
+    return p;
+  }
+
+  /***** DRIP OBJECT – a slow, irregular “drip” trail *****/
+  // Reverse fade duration in ms
+  //const REVERSE_FADE_DURATION = 7000;
+
+  // The Drip constructor now accepts a dripColor that is the locked-in HEX value.
+  /*function getOpacityAtPoint(blotch, x, y) {
+      let dx = x - blotch.x;
+      let dy = y - blotch.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      let normalizedDistance = distance / blotch.radius;
+      return Math.pow(1 - normalizedDistance, 2); // Amplify the opacity difference
+  }
+
+function Drip(startX, startY, blotch, dripColor, initialOpacity) {
+    this.path = [{ x: startX, y: startY, t: performance.now() }];
+    this.lastUpdate = performance.now();
+    this.color = dripColor;
+    this.blotch = blotch;
+    this.active = true;
+    this.initialOpacity = initialOpacity;
 }
 
-// Initial drawing
-ctx.fillStyle = 'black';
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+  Drip.prototype.update = function(currentTime) {
+    if (!this.active) return;
+    if (currentTime - this.lastUpdate > DRIP_UPDATE_INTERVAL) {
+      if (!this.fadeOut) {
+        let lastPoint = this.path[this.path.length - 1];
+        let dx = (Math.random() * 2 - 1) * effectiveDRIP_X_VARIATION;
+        let dy = effectiveDRIP_Y_VARIATION[0] + Math.random() * (effectiveDRIP_Y_VARIATION[1] - effectiveDRIP_Y_VARIATION[0]);
+        let newX = lastPoint.x + dx;
+        let newY = lastPoint.y + dy;
+        this.path.push({ x: newX, y: newY, t: currentTime });
+        this.lastUpdate = currentTime;
+        if (newY > height) {
+          this.fadeOut = true;
+          this.fadeStart = currentTime;
+        }
+      } else {
+        if (currentTime - this.fadeStart > REVERSE_FADE_DURATION) {
+          let startPoint = getRandomPointInBlotch(this.blotch);
+          this.path = [{ x: startPoint.x, y: startPoint.y, t: currentTime }];
+          this.fadeOut = false;
+          this.lastUpdate = currentTime;
+        } else {
+          this.lastUpdate = currentTime;
+        }
+      }
+    }
+  };
 
-// Initialize and start animation
-assignRandomColors();
-initCubes();
-updateCubes();
-animate();
-setInterval(waveColorChange, colorChangeSpeed);
+  Drip.prototype.draw = function(ctx, currentTime) {
+      if (this.path.length < 2) return;
+      ctx.save();
+      let N = this.path.length;
+      let minY = Math.min(...this.path.map(p => p.y));
+      let bottom = height;
+      let fadeProgress = 0;
+      if (this.fadeOut) {
+          fadeProgress = Math.min((currentTime - this.fadeStart) / REVERSE_FADE_DURATION, 0.5);
+      }
 
-// Reload on canvas click
-let timer;
-        canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+      for (let i = 0; i < N - 1; i++) {
+          let p1 = this.path[i];
+          let p2 = this.path[i + 1];
+          let relative = (p1.y - minY) / (bottom - minY);
+          let baseAlpha = (1 - relative) * 0.5;
 
-        canvas.addEventListener("dblclick", () => {
-          clearTimeout(timer);
-    const link = document.createElement('a');
-    link.download = 'USADA.png';
-    link.href = canvas.toDataURL();
-    link.click();
-});
+          if (i === 0) {
+              baseAlpha *= this.initialOpacity;
+          }
 
+          let extraFade = this.fadeOut ? ((N - 1 - i) / (N - 1)) * fadeProgress : 0;
+          let finalAlpha = Math.max(baseAlpha - extraFade, 0);
+          ctx.lineWidth = effectiveDRIP_BASE_WIDTH;
+          ctx.strokeStyle = hexToRgba(this.color, finalAlpha);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.globalAlpha = .375;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+  };
 
-function initCanvas() {
-    //attachCanvasEventListeners();
-}
+  for (let i = 0; i < blotches.length; i++) {
+      let dripColor = blotches[i].finalColor;
+      for (let j = 0; j < DRIP_COUNT; j++) {
+          let startPt = getRandomPointInBlotch(blotches[i]);
+          let initialOpacity = getOpacityAtPoint(blotches[i], startPt.x, startPt.y);
+          drips.push(new Drip(startPt.x, startPt.y, blotches[i], dripColor, initialOpacity));
+      }
+  }
+  */
 
-initCanvas();
-setTimeout(() => {
-    initCanvas();
-}, 15000);
+  function hexToRgba(hex, alpha) {
+    hex = hex.replace("#", "");
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
+  function init() {
+      let candidates = [];
+      blotches = [];
+      //drips = [];
+      loadedBlotchColors = [];
+      let centerX = width / 2;
+      let centerY = height / 2;
 
+      // Generate candidate positions.
+      for (let i = 0; i < BLOTCH_COUNT; i++) {
+          let tries = 0;
+          let candidate;
+          let radius = effectiveBLOTCH_MIN_RADIUS + Math.random() * (effectiveBLOTCH_MAX_RADIUS - effectiveBLOTCH_MIN_RADIUS);
 
-/*Run release even when they refresh not with click (F5, refresh button, closing page)*/
-      window.addEventListener('pagehide', (event) => {
-      /*Release every canvas*/
-      var canvases = document.getElementsByTagName("canvas");
-      var canvasesList = Array.prototype.slice.call(canvases);
-            canvasesList.forEach(releaseCanvas);
+          do {
+              let x = centerX + (Math.random() - 0.5) * effectiveSPREAD_RADIUS;
+              let y = centerY + (Math.random() - 0.5) * effectiveSPREAD_RADIUS;
+              candidate = { x, y, radius };
+              tries++;
+          } while (!isValidPosition(candidate, candidates) && tries < 100);
+
+          if (isValidPosition(candidate, candidates)) {
+              candidates.push(candidate);
+          } else {
+              console.warn(`blah`);
+          }
+      }
+
+      // Calculate the centroid of the group of blotches.
+      let sumX = 0, sumY = 0;
+      candidates.forEach(c => {
+          sumX += c.x;
+          sumY += c.y;
+      });
+      let centroidX = sumX / candidates.length;
+      let centroidY = sumY / candidates.length;
+
+      // Calculate the offset needed to center the group.
+      let offsetX = centerX - centroidX;
+      let offsetY = centerY - centroidY;
+
+      // Adjust the positions of all blotches to center the group.
+      candidates.forEach(c => {
+          c.x += offsetX;
+          c.y += offsetY-15;
       });
 
-</script>
+      // Assign #900606 to a middle blotch.
+      let middleIndex = Math.floor(BLOTCH_COUNT / 2); // Middle position
+
+
+      // Create blotches—assign #900606 to the middle blotch.
+      for (let i = 0; i < candidates.length; i++) {
+          let cand = candidates[i];
+          let color;
+          if (i === middleIndex) {
+              color = specialColor; // Assign #900606 to the middle blotch
+          } else {
+              color = getBlotchColor(i, BLOTCH_COUNT);
+              // Ensure the special color is not assigned to any other blotch
+              while (color === specialColor) {
+                  color = getBlotchColor(i, BLOTCH_COUNT);
+              }
+          }
+          let blotch = new Blotch(cand.x, cand.y, cand.radius, color);
+          blotch.finalColor = color;
+          blotches.push(blotch);
+      }
+
+      // Build the unique array of blotch final colors.
+      loadedBlotchColors = blotches.map(b => b.finalColor);
+
+      // Now create drips for each blotch.
+/*      for (let i = 0; i < blotches.length; i++) {
+          let dripColor = blotches[i].finalColor;
+          for (let j = 0; j < DRIP_COUNT; j++) {
+              let startPt = getRandomPointInBlotch(blotches[i]);
+              drips.push(new Drip(startPt.x, startPt.y, blotches[i], dripColor));
+          }
+      } */
+  }
+
+  function isValidPosition(candidate, existingCandidates) {
+    if (existingCandidates.length === 0) return true;
+    for (let b of existingCandidates) {
+      let dx = candidate.x - b.x;
+      let dy = candidate.y - b.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < effectiveMIN_BLOTCH_DISTANCE || distance > effectiveMAX_BLOTCH_DISTANCE) return false;
+    }
+    return true;
+  }
+
+  function drawBlotches() {
+    bgCtx.clearRect(0, 0, width, height);
+
+    // Draw all blotches
+    blotches.forEach(blotch => blotch.draw(bgCtx));
+
+    // Apply pixel shifter to the entire canvas AFTER all blotches are drawn
+    pixelShifter(bgCtx, 0, 0, width, height, 42);
+  }
+  /***** ANIMATION LOOP – update and redraw drips *****/
+  /*function animate(time) {
+    dripCtx.clearRect(0, 0, width, height);
+    drips.forEach(drip => {
+      drip.update(time);
+      drip.draw(dripCtx, time);
+    });
+    requestAnimationFrame(animate);
+  } */
+
+  window.onload = function() {
+    bgCanvas = document.getElementById("bgCanvas");
+    canvas = document.getElementById("canvas");
+    bgCtx = bgCanvas.getContext("2d");
+    //dripCtx = canvas.getContext("2d");
+    width = window.innerWidth;
+    height = window.innerHeight;
+    bgCanvas.width = width;
+    bgCanvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
+
+    resizeCanvases();
+    // Do not call init() here again
+    //requestAnimationFrame(animate);
+
+      let timer;
+      canvas.addEventListener("click", e => {
+        if (e.detail === 1) {
+          timer = setTimeout(() => location.reload(), 300);
+        }
+      });
+
+      canvas.addEventListener("dblclick", () => {
+        clearTimeout(timer);
+        showModal();
+      });
+    };
+
+     function showModal() {
+                 const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
+                 const modal = document.createElement('div');
+                 modal.className = 'modal';
+                 if (modal) {
+                   modal.style.background = "#000";
+                   modal.style.boxShadow = `0 0 10px "#018dbe"`;
+                 }
+                 options.forEach(opt => {
+                     const btn = document.createElement('button');
+                     btn.textContent = opt;
+                     btn.onclick = () => {
+                         document.body.removeChild(modal);
+                         scaleCanvas(parseInt(opt), opt.includes('t'));
+                     };
+                     modal.appendChild(btn);
+                     // Apply the styles dynamically
+                     if (btn) {
+                       btn.style.background = "#000";
+                       btn.style.color = "#018dbe";
+                       btn.style.boxShadow = `0 0 10px "#018dbe"`;
+                     }
+                   });
+                 document.body.appendChild(modal);
+             }
+
+             function scaleCanvas(multiplier, transparent) {
+               // Calculate the target dimensions while preserving aspect ratio.
+               // (Assuming both canvases share the same dimensions.)
+               const originalAspectRatio = canvas.width / canvas.height;
+               const upscaleHeight = 512 * multiplier;
+               const upscaleWidth = upscaleHeight * originalAspectRatio;
+
+               // Create the offscreen canvas.
+               const offscreenCanvas = document.createElement('canvas');
+               const offscreenCtx = offscreenCanvas.getContext('2d');
+               offscreenCanvas.width = upscaleWidth;
+               offscreenCanvas.height = upscaleHeight;
+
+               // Handle background if not transparent.
+               if (!transparent) {
+                 offscreenCtx.fillStyle = '#111111'; // Black background.
+                 offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
+               }
+
+               // Calculate scaling factors.
+               const scale = upscaleHeight / canvas.height;
+               const scaledWidth = canvas.width * scale;
+               const scaledHeight = canvas.height * scale;
+               const offsetX = (upscaleWidth - scaledWidth) / 2;
+               const offsetY = (upscaleHeight - scaledHeight) / 2;
+
+               // Draw the background canvas first, then the drip canvas on top.
+               offscreenCtx.drawImage(bgCanvas, offsetX, offsetY, scaledWidth, scaledHeight);
+               offscreenCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+               // Save the combined image.
+               const link = document.createElement('a');
+               link.download = `Unfinished_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+               link.href = offscreenCanvas.toDataURL('image/png');
+               link.click();
+             }
+
+  </script>
 </body>
 </html>
