@@ -1,6 +1,277 @@
-<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta charset="UTF-8"><style>body{margin:0;overflow:hidden;background-color:#000}canvas{display:block}</style></head><body><canvas id="canvas" style="object-fit:contain;width:100vw;height:100vh"></canvas>
-  <script>
-  let f1,text="F5",isAndroid=/Android/i.test(navigator.userAgent),isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);f1=isAndroid?"Tahoma":isIOS?"Avenir":"Tahoma";let redStop=0,whiteStopStart=getRandomRange(.25,.5),whiteStopEnd=getRandomRange(.51,.75),blueStop=1,c1=rClr(),c2=rClr(),c3=rClr(),c4=rClr(),c5="rgb(33, 37, 41)",chng=.98,cubeSize=15;function rClr(){let t=Math.floor(Math.random()*256),e=Math.floor(Math.random()*256),a=Math.floor(Math.random()*256);return`rgb(${t}, ${e}, ${a})`}const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");canvas.width=3840,canvas.height=2160;let startTime=Date.now(),fadeToColor=!1,fading=!1,explosionTriggered=!1,nextColor,fontSize=2042,cubes=[],colors=[],snake=[],currentColorIndex=0,colorChangeSpeed=isAndroid?101:isIOS?115:95;class Cube{constructor(t,e,a,s,n){this.x=t,this.y=e,this.targetX=a,this.targetY=s,this.t=currentColorIndex,this.size=cubeSize,this.i=[],this.o=!1,this.h=(Math.random()-.5)*n,this.l=(Math.random()-.5)*n,this.u=n}g(){ctx.fillStyle=colors[this.t],ctx.fillRect(this.x,this.y,this.size,this.size),ctx.fillStyle="rgba(0,0,0,.7)",ctx.fillRect(this.x+this.size*.1,this.y+this.size*.1,this.size,this.size)}update(){const t=.03,e=5;Math.random()<.1&&(this.h=(Math.random()-.5)*this.u,this.l=(Math.random()-.5)*this.u);let a=this.targetX+this.h,s=this.targetY+this.l,n=a-this.x,i=s-this.y,o=Math.sqrt(n*n+i*i);o>e&&(this.x+=n/o*t*o,this.y+=i/o*t*o)}M(){this.t=(this.t+1)%colors.length}v(t,a){let e=colors[this.t].match(/\d+/g).map(Number),s=colors[t].match(/\d+/g).map(Number),n=e.map((t,e)=>Math.floor(t+(s[e]-t)*a));this.t=colors.findIndex(t=>t===`rgb(${n[0]}, ${n[1]}, ${n[2]})`),this.t===-1&&(colors.push(`rgb(${n[0]}, ${n[1]}, ${n[2]})`),this.t=colors.length-1)}}function getRandomColor(t){let e;do{e=`rgb(${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)})`}while(e===t);return e}function assignRandomColors(){colors=[c1,c2,c3,c4],currentColorIndex=0}function initCubes(){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.font=`900 ${fontSize}px ${f1}`;let t=ctx.measureText(text).width,e=fontSize,a=(canvas.width-t)/2,s=(canvas.height+e)/2.29,n=[{x:0,y:0},{x:30,y:0},{x:-30,y:0},{x:0,y:30},{x:0,y:-30},{x:15,y:15},{x:-15,y:-15},{x:15,y:-15},{x:-15,y:15}];ctx.fillStyle="black",ctx.fillText(text,a,s),n.forEach(t=>{ctx.fillStyle=colors[currentColorIndex],ctx.fillText(text,a+t.x,s+t.y)});let i=ctx.getImageData(0,0,canvas.width,canvas.height).data;for(let a=0;a<canvas.height;a+=cubeSize)for(let e=0;e<canvas.width;e+=cubeSize){let t=(a*canvas.width+e)*4;if(i[t+3]>128){let t=30;cubes.push(new Cube(e,a,e,a,t))}}cubes.forEach(e=>{e.i=cubes.filter(t=>t!==e&&Math.abs(t.targetX-e.targetX)<=cubeSize&&Math.abs(t.targetY-e.targetY)<=cubeSize)})}const gradient=ctx.createRadialGradient(canvas.width/2,canvas.height/2,512,canvas.width/2,canvas.height/2,canvas.height);function getRandomRange(t,e){return Math.random()*(e-t)+t}function animate(){ctx.fillStyle="rgba(0, 0, 0, 0.05)",ctx.fillRect(0,0,canvas.width,canvas.height),cubes.forEach(t=>{t.update(),t.g()}),requestAnimationFrame(animate)}function waveColorChange(){if(!fading){if(0===snake.length){let t=cubes[Math.floor(Math.random()*cubes.length)];snake.push(t),t.o=!0}for(let a=0;a<snake.length;a++){let t=snake[a];t.M();let e=t.i.filter(t=>!t.o);e.length>0?(snake[a]=e[Math.floor(Math.random()*e.length)],e[Math.floor(Math.random()*e.length)].o=!0):(snake.splice(a,1),a--)}while(snake.length<70){let t=snake[snake.length-1],e=t.i.filter(t=>!t.o),a=e.length>0?e[Math.floor(Math.random()*e.length)]:t.i[Math.floor(Math.random()*t.i.length)];if(a){snake.push(a),a.o=!0}else break}0===snake.length&&(snake.push(cubes[Math.floor(Math.random()*cubes.length)]),snake[0].o=!0)}let t=cubes.filter(t=>t.t!==currentColorIndex).length;(Date.now()-startTime>=15e3||t/cubes.length>=chng)&&!fading&&!explosionTriggered&&(ctx.clearRect(0,0,canvas.width,canvas.height),explosionTriggered=!0,fadeToColor=!0,fadeStartTime=Date.now(),nextColor=(currentColorIndex+1)%colors.length,fading=!0,snake=[],cubes.forEach(t=>{t.o=!1,t.t=nextColor})),fadeToColor&&function(){let t=3e3,e=Date.now()-fadeStartTime,a=Math.min(e/3e3,1);cubes.forEach(t=>{t.v(nextColor,a),isAndroid?t.u=2600-2570*a:isIOS?t.u=1700-1670*a:t.u=2600-2570*a}),e>=3e3&&(fadeToColor=!1,fading=!1,explosionTriggered=!1,startTime=Date.now(),currentColorIndex=nextColor)}(),!fading&&Date.now()-startTime>=15e3&&function(){let n=Math.min(canvas.width,canvas.height)/2,i={x:canvas.width/2,y:canvas.height/2};cubes.forEach(t=>{let e=t.x-i.x,a=t.y-i.y,s=Math.atan2(a,e);t.targetX=i.x+Math.cos(s)*n,t.targetY=i.y+Math.sin(s)*n,t.t=Math.floor(Math.random()*colors.length)})}()}function updateCubes(){let t=3e3,e=Date.now()-startTime,a=Math.min(e/t,1);cubes.forEach(t=>{isAndroid?t.u=2600-2570*a:isIOS?t.u=1700-1670*a:t.u=2600-2570*a}),e<t&&requestAnimationFrame(updateCubes)}assignRandomColors(),initCubes(),cubes.forEach(t=>t.u=30),startTime=Date.now(),animate(),setInterval(waveColorChange,colorChangeSpeed);let timer;canvas.addEventListener("click",t=>t.detail===1&&(timer=setTimeout(()=>location.reload(),275))),canvas.addEventListener("dblclick",()=>{clearTimeout(timer);let t=document.createElement("a");t.download="USADA.png",t.href=canvas.toDataURL(),t.click()}),function initCanvas(){}(),setTimeout(()=>{initCanvas()},15e3);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
 
-function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
-</script></body></html>
+    #chat-container {
+      width: 500px;
+      height: 600px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 20px auto;
+    }
+
+    #personality-instructions-label {
+      margin-bottom: 10px;
+    }
+
+    #personality-instructions-input {
+      width: calc(100% - 20px);
+      height: 30px;
+      font-size: 16px;
+      padding-left: 10px;
+      margin-bottom: 20px;
+    }
+
+    #chat-log {
+      padding: 10px;
+      overflow-y: auto;
+      height: calc(100% - 200px); /* Adjusted for larger input area */
+    }
+
+    .message-container {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .copy-button:hover {
+      opacity: 0.8;
+    }
+
+    .user-message {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .ai-message {
+      background-color: #e0e0e0;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    pre {
+      background-color: #f8f8f8;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+
+    code {
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      color: #d63384;
+    }
+
+    #chat-input-container {
+      margin-top: 10px;
+    }
+
+    textarea {
+      width: calc(100% - 20px);
+      height: 80px; /* Adjust height as needed */
+      font-size: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical; /* Allow vertical resizing */
+    }
+
+    button[type=button] {
+      color: white;
+      background-color: #4CAF50;
+      outline: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0.05em 0.05em 0.2em rgba(51, 51, 51, 0.3);
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      width: 100px;
+      margin-top: 10px; /* Add spacing between textarea and button */
+    }
+
+    button:hover {
+      opacity: 0.8;
+    }
+
+    button[type=button]:active {
+      transform: translateY(0.2em);
+    }
+
+    label {
+      color: #4CAF50;
+    }
+
+    input:focus, textarea:focus {
+      box-shadow: 0.05em 0.05em 0.4em rgba(189, 189, 189, 0.6);
+    }
+  </style>
+</head>
+<body>
+<div id="chat-container">
+  <h2>Venice AI Chat</h2>
+
+  <div id="personality-instructions-label">Personality Instructions:</div>
+  <input type='text' id='personality-instructions-input' placeholder='Enter personality instructions here...'></input>
+
+  <div id="chat-log"></div>
+
+  <div id="chat-input-container">
+    <textarea id='chat-input' placeholder='Type your message here...'></textarea>
+    <button type='button' id='send-button'>Send</button>
+  </div>
+</div>
+
+<script>
+  // Set your API URL and key here
+  const apiURL = 'https://api.venice.ai/api/v1';
+  const apiKey = 'vHsUaNUH1WlChVxNiKwjWktNon60VReFYEtpCu2pvy'; // Replace with your actual API key
+
+  // Get the chat input and output elements
+  const chatInput = document.getElementById('chat-input');
+  const chatLog = document.getElementById('chat-log');
+  const personalityInstructionsInput = document.getElementById('personality-instructions-input');
+
+  // Function to send a message to the Venice API
+  async function sendMessage(message, personalityInstructions) {
+    try {
+      const response = await fetch(apiURL + '/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-405b",
+          messages: [
+            {
+              role: "user",
+              content: `${personalityInstructions}\n${message}`
+            }
+          ],
+          venice_parameters: {
+          include_venice_system_prompt: false,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const jsonData = await response.json();
+      return jsonData;
+    } catch (error) {
+      console.error('Error:', error);
+      return { response: 'Error sending message' };
+    }
+  }
+
+  // Function to handle user input
+  async function handleUserInput() {
+    const userInput = chatInput.value.trim();
+    const personalityInstructions = personalityInstructionsInput.value.trim();
+    if (userInput !== '') {
+      // Display the user's input in the chat log
+      addMessageToChatLog('user', userInput);
+
+      // Send the user's input to the Venice AI
+      const data = await sendMessage(userInput, personalityInstructions);
+
+      // Display the AI's response in the chat log
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const aiResponse = data.choices[0].message.content;
+        addMessageToChatLog('ai', aiResponse);
+      } else if (data.error) {
+        addMessageToChatLog('ai', data.error);
+      } else {
+        addMessageToChatLog('ai', 'No response received');
+      }
+
+      // Clear the user's input field
+      chatInput.value = '';
+      scrollToBottom();
+    }
+  }
+
+  // Function to add a message to the chat log with a copy button
+  function addMessageToChatLog(sender, message) {
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('message-container');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+    messageDiv.innerHTML = formatResponse(message);
+
+    const copyButton = document.createElement('button');
+    copyButton.classList.add('copy-button');
+    copyButton.textContent = 'Copy';
+    copyButton.addEventListener('click', () => {
+      copyToClipboard(message);
+    });
+
+    messageContainer.appendChild(copyButton);
+    messageContainer.appendChild(messageDiv);
+    chatLog.appendChild(messageContainer);
+  }
+
+  // Function to copy text to clipboard
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        alert('Copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+      });
+  }
+
+  // Function to format the AI's response (preserve code blocks)
+  function formatResponse(response) {
+    // Replace code blocks with <pre><code> tags
+    return response.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  }
+
+  // Function to scroll to the bottom of the chat log
+  function scrollToBottom() {
+    const div = document.getElementById("chat-log");
+    div.scrollTop = div.scrollHeight;
+  }
+
+  // Add an event listener to the send button
+  document.getElementById('send-button').addEventListener('click', handleUserInput);
+
+  // Add an event listener to the enter key press (without Shift)
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent newline in textarea
+      handleUserInput();
+    }
+  });
+</script>
+</body>
+</html>
