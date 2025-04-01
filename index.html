@@ -1,379 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardano Asset Explorer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background-color: #000;
-            color: #fff;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-        }
-
-        #logo {
-            width: 50px;
-            margin-right: 15px;
-        }
-
-        .search-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px;
-        }
-
-        #searchInput {
-            width: 400px;
-            padding: 10px;
-            background-color: #333;
-            border: 1px solid #fff;
-            color: #fff;
-        }
-
-        button, #viewDropdown, #collectionDropdown {
-            padding: 10px 20px;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-
-        #assetGrid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            justify-items: center;
-        }
-
-        .asset-card {
-            width: 100%;
-            padding: 10px;
-            background-color: #1a1a1a;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.3);
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .asset-card:hover {
-            transform: scale(1.1);
-        }
-
-        .asset-image {
-            width: 100%;
-            height: 100px;
-            object-fit: contain;
-            border-radius: 5px;
-        }
-
-
-        .asset-preview.small,
-.asset-image.small {
-    width: 200px;
-    height: 200px;
-    object-fit: cover;
-}
-
-.asset-preview.medium,
-.asset-image.medium {
-    width: 40%;
-    height: 50%;
-    object-fit: contain;
-}
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cardano Asset Explorer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+    }
+    #logo {
+      width: 50px;
+      margin-right: 15px;
+    }
+    .search-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px;
+    }
+    #searchInput {
+      width: 400px;
+      padding: 10px;
+      background-color: #333;
+      border: 1px solid #fff;
+      color: #fff;
+    }
+    button, #viewDropdown, #collectionDropdown {
+      padding: 10px 20px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #assetGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      justify-items: center;
+    }
+    .asset-card {
+      width: 100%;
+      padding: 10px;
+      background-color: #1a1a1a;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.3);
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+    .asset-card:hover {
+      transform: scale(1.1);
+    }
+    .asset-image {
+      width: 100%;
+      height: 100px;
+      object-fit: contain;
+      border-radius: 5px;
+    }
+    .asset-preview.small,
+    .asset-image.small {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+    }
+    .asset-preview.medium,
+    .asset-image.medium {
+      width: 40%;
+      height: 50%;
+      object-fit: contain;
+    }
+    /* Modal container styling */
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+    }
+    #modal .modal-inner {
+      position: relative;
+      margin: auto;
+      padding: 20px;
+      background-color: #1a1a1a;
+      border-radius: 10px;
+      width: 80%;
+      height: 80%;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
 
-<header>
+  <header>
     <img src="https://cryptologos.cc/logos/cardano-ada-logo.png" alt="Cardano Logo" id="logo">
     <h1>Cardano Asset Explorer</h1>
-</header>
+  </header>
 
-<main>
+  <main>
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Enter Policy ID or Wallet Address">
-        <button onclick="handleSearch()">Search</button>
-        <button onclick="pasteFromClipboard()">Paste</button>
-        <select id="collectionDropdown"></select>
-        <select id="viewDropdown">
-            <option value="10">10</option>
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-            <option value="all">All</option>
-        </select>
+      <!-- The input is still here, but a default policy is set and auto-searched on load -->
+      <input type="text" id="searchInput" placeholder="Enter Policy ID or Wallet Address">
+      <button onclick="handleSearch()">Search</button>
+      <button onclick="pasteFromClipboard()">Paste</button>
+      <select id="collectionDropdown"></select>
+      <select id="viewDropdown">
+        <option value="1" selected>1</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="all">All</option>
+      </select>
     </div>
     <div id="assetGrid"></div>
-</main>
+  </main>
 
-<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.9);">
-    <div style="position:relative; margin:auto; padding:20px; background-color:#1a1a1a; border-radius:10px; width:80%; height:80%; overflow-y:auto;">
-        <button onclick="closeModal()">Close</button>
-        <button class="fullscreen-btn">View Fullscreen</button>
-        <button onclick="viewCode()">View Code</button>
-        <pre id="modalContent"></pre>
+  <div id="modal">
+    <div class="modal-inner">
+      <button onclick="closeModal()">Close</button>
+      <button class="fullscreen-btn" onclick="openFullScreen(currentAsset)">View Fullscreen</button>
+      <button onclick="viewCode()">View Code</button>
+      <div id="modalContent"></div>
     </div>
-</div>
+  </div>
 
-<script>
+  <script>
     const BLOCKFROST_API_KEY = 'mainnetehvvvJVoJUAz5DFJJz2L9fHZmkXlXTMP';
     const BLOCKFROST_URL = 'https://cardano-mainnet.blockfrost.io/api/v0';
+    // Set your default policy ID here
+    const defaultPolicy = "2b642564d4e7083594811d208c00285b3676bae7e9621bcfd3a4ebaa";
+    // Store the current asset for full screen use
+    let currentAsset = null;
+
+    // On page load, populate the input with the default policy and auto-search.
+    window.onload = async () => {
+      document.getElementById('searchInput').value = defaultPolicy;
+      await handleSearch();
+    };
 
     async function handleSearch() {
-        console.log('Search initiated');
-        const input = document.getElementById('searchInput').value.trim();
-        if (/^[a-f0-9]{56,64}$/i.test(input)) {
-          // Call the function properly
-          const assets = await fAssets(input);
-            console.log('Assets fetched:', assets);
-            renderAssets(assets);
-        } else {
-            console.error('Invalid input');
-        }
+      console.log('Search initiated');
+      const input = document.getElementById('searchInput').value.trim();
+      if (/^[a-f0-9]{56,64}$/i.test(input)) {
+        const assets = await fAssets(input);
+        console.log('Assets fetched:', assets);
+        renderAssets(assets);
+      } else {
+        console.error('Invalid input');
+      }
     }
 
     async function fAssets(input) {
-        console.log('Input Policy ID:', input);
-
-        try {
-            const response = await fetch(`${BLOCKFROST_URL}/assets/policy/${input}`, {
-                headers: { 'project_id': BLOCKFROST_API_KEY }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch policy assets: ${response.status} ${response.statusText}`);
-            }
-
-            const assetsList = await response.json();
-            console.log('Assets List:', assetsList);
-
-            if (!Array.isArray(assetsList) || assetsList.length === 0) {
-                console.warn('Assets list is empty or not an array');
-                return [];
-            }
-
-            let assets = [];  // Initialize assets array
-            let page = 1;     // Initialize page if needed for pagination
-
-            for (const asset of assetsList) {
-                console.log(`Fetching asset: ${asset.asset}`);
-
-                const assetResponse = await fetch(`${BLOCKFROST_URL}/assets/${asset.asset}`, {
-                    headers: { 'project_id': BLOCKFROST_API_KEY }
-                });
-
-                if (!assetResponse.ok) {
-                    console.error(`Failed to fetch asset ${asset.asset}: ${assetResponse.status} ${assetResponse.statusText}`);
-                    continue;  // Skip to the next asset if this one fails
-                }
-
-                const data = await assetResponse.json();
-                const metadata = data.onchain_metadata || {};
-                const assetName = metadata.name || hexToString(asset.asset.slice(56));
-
-                if (!data) {
-                    console.warn(`No data for asset: ${asset.asset}`);
-                    continue;
-                }
-
-                assets.push(data);
-                page++;
-                console.log('hello');
-            }
-
-            console.log('hello2');
-            console.log('Fetched Assets:', assets);
-
-            return assets;  // Return the populated assets array
-
-        } catch (error) {
-            console.error('Error fetching assets:', error);
-            return [];  // Return empty array on error
+      console.log('Input Policy ID:', input);
+      try {
+        const response = await fetch(`${BLOCKFROST_URL}/assets/policy/${input}`, {
+          headers: { 'project_id': BLOCKFROST_API_KEY }
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch policy assets: ${response.status} ${response.statusText}`);
         }
+        const assetsList = await response.json();
+        console.log('Assets List:', assetsList);
+        if (!Array.isArray(assetsList) || assetsList.length === 0) {
+          console.warn('Assets list is empty or not an array');
+          return [];
+        }
+        let assets = [];
+        for (const asset of assetsList) {
+          console.log(`Fetching asset: ${asset.asset}`);
+          const assetResponse = await fetch(`${BLOCKFROST_URL}/assets/${asset.asset}`, {
+            headers: { 'project_id': BLOCKFROST_API_KEY }
+          });
+          if (!assetResponse.ok) {
+            console.error(`Failed to fetch asset ${asset.asset}: ${assetResponse.status} ${assetResponse.statusText}`);
+            continue;
+          }
+          const data = await assetResponse.json();
+          if (!data) {
+            console.warn(`No data for asset: ${asset.asset}`);
+            continue;
+          }
+          assets.push(data);
+        }
+        console.log('Fetched Assets:', assets);
+        return assets;
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        return [];
+      }
     }
-
 
     function renderAssets(assets) {
-        console.log('Rendering assets');
-        const grid = document.getElementById('assetGrid');
-        grid.innerHTML = '';
-
-        assets.forEach(asset => {
-          const fileSrc = getFileSource(asset);
-console.log('fileSrc type:', typeof fileSrc, fileSrc);
-            const card = document.createElement('div');
-            card.className = 'asset-card';
-
-            if (fileSrc.startsWith('data:text/html')) {
-                card.innerHTML = `
-                    <iframe src="${fileSrc}" class="asset-preview small"></iframe>
-                    <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
-                    <button class="fullscreen-btn">Full Screen</button>`;
-            } else if (fileSrc.startsWith('data:image')) {
-                card.innerHTML = `
-                    <img src="${fileSrc}" class="asset-image small">
-                    <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
-                    <button class="fullscreen-btn">Full Screen</button>`;
-            } else {
-                card.innerHTML = `
-                    <p>Unsupported File Type</p>
-                    <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>`;
-            }
-
-            // Modal click
-            card.onclick = () => openModal(asset);
-            grid.appendChild(card);
-        });
-
-    }
-  /*  function getFileSource(asset) {
-        const filesArray = asset.onchain_metadata?.files;
-
-        if (filesArray && filesArray.length > 0) {
-            // Take the first file's src
-            return Array.isArray(filesArray[0].src)
-                ? filesArray[0].src.join('')  // Combine 64-char chunks
-                : filesArray[0].src;
+      console.log('Rendering assets');
+      const grid = document.getElementById('assetGrid');
+      grid.innerHTML = '';
+      assets.forEach(asset => {
+        const fileSrc = getFileSource(asset);
+        console.log('fileSrc type:', typeof fileSrc, fileSrc);
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
+          card.innerHTML = `
+            <iframe src="${fileSrc}" class="asset-preview small"></iframe>
+            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
+            <button class="fullscreen-btn" onclick="openFullScreen(asset)">Full Screen</button>`;
+        } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
+          card.innerHTML = `
+            <img src="${fileSrc}" class="asset-image small">
+            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
+            <button class="fullscreen-btn" onclick="openFullScreen(asset)">Full Screen</button>`;
+        } else {
+          card.innerHTML = `
+            <p>Unsupported File Type</p>
+            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>`;
         }
-
-        // Fallback to `image` if `files` is missing
-        return asset.onchain_metadata?.image || 'placeholder.png';
-    } */
+        // When a card is clicked, open the modal and store the asset globally.
+        card.onclick = () => {
+          currentAsset = asset;
+          openModal(asset);
+        };
+        grid.appendChild(card);
+      });
+    }
 
     function getFileSource(asset) {
-        if (!asset || !asset.onchain_metadata) {
-            console.warn('Invalid asset in getFileSource:', asset);
-            return 'placeholder.png';
-        }
-
-        // Check for CIP-25 nested structure
-        if (asset.onchain_metadata['721']) {
-            const policyIds = Object.keys(asset.onchain_metadata['721']);
-            if (policyIds.length > 0) {
-                const policy = asset.onchain_metadata['721'][policyIds[0]];
-                const assetNames = Object.keys(policy);
-                if (assetNames.length > 0) {
-                    const meta = policy[assetNames[0]];
-                    if (meta.files && meta.files.length > 0) {
-                        const srcValue = meta.files[0].src;
-                        return Array.isArray(srcValue)
-                            ? srcValue.join('')
-                            : srcValue.toString();
-                    }
-                    return meta.image ? meta.image.toString() : 'placeholder.png';
-                }
-            }
-        }
-
-        // Fallback to the original logic
-        const filesArray = asset.onchain_metadata.files;
-        if (filesArray && filesArray.length > 0) {
-            const srcValue = filesArray[0].src;
-            return Array.isArray(srcValue)
+      if (!asset || !asset.onchain_metadata) {
+        console.warn('Invalid asset in getFileSource:', asset);
+        return 'placeholder.png';
+      }
+      // Check for CIP-25 nested structure
+      if (asset.onchain_metadata['721']) {
+        const policyIds = Object.keys(asset.onchain_metadata['721']);
+        if (policyIds.length > 0) {
+          const policy = asset.onchain_metadata['721'][policyIds[0]];
+          const assetNames = Object.keys(policy);
+          if (assetNames.length > 0) {
+            const meta = policy[assetNames[0]];
+            if (meta.files && meta.files.length > 0) {
+              const srcValue = meta.files[0].src;
+              return Array.isArray(srcValue)
                 ? srcValue.join('')
                 : srcValue.toString();
+            }
+            return meta.image ? meta.image.toString() : 'placeholder.png';
+          }
         }
-        return asset.onchain_metadata.image ? asset.onchain_metadata.image.toString() : 'placeholder.png';
+      }
+      // Fallback to top-level metadata
+      const filesArray = asset.onchain_metadata.files;
+      if (filesArray && filesArray.length > 0) {
+        const srcValue = filesArray[0].src;
+        return Array.isArray(srcValue)
+          ? srcValue.join('')
+          : srcValue.toString();
+      }
+      return asset.onchain_metadata.image ? asset.onchain_metadata.image.toString() : 'placeholder.png';
     }
 
+    // Updated openModal: splits the modal into an 80% large iframe (or image) area and a 20% meta area below.
+    function openModal(asset) {
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modalContent');
+      const metaText = JSON.stringify(asset.onchain_metadata, null, 2);
+      const fileSrc = getFileSource(asset);
+      modal.style.display = 'block';
+      if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
+        modalContent.innerHTML = `
+          <div style="height:80%; overflow:hidden;">
+            <iframe src="${fileSrc}" style="
+              width: 100%;
+              height: 100%;
+              border: none;
+              display: block;
+              margin: 0;
+              padding: 0;
+              object-fit: contain;
+            "></iframe>
+          </div>
+          <div style="height:20%; overflow-y:auto; font-size: 0.8em; margin-top:10px;">
+            <pre>${metaText}</pre>
+          </div>`;
+      } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
+        modalContent.innerHTML = `
+          <div style="height:80%; overflow:hidden;">
+            <img src="${fileSrc}" style="
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: block;
+              margin: 0;
+              padding: 0;
+            ">
+          </div>
+          <div style="height:20%; overflow-y:auto; font-size: 0.8em; margin-top:10px;">
+            <pre>${metaText}</pre>
+          </div>`;
+      } else {
+        console.warn(`Unsupported file type: ${fileSrc}`);
+        return;
+      }
+    }
 
+    // Updated openFullScreen: opens a new window with the asset content taking primary focus and meta below.
     function openFullScreen(asset) {
-        console.log('Asset in openFullScreen:', asset);
-        const modal = document.getElementById('modal');
-        const fileSrc = getFileSource(asset);
-        const fullScreenWindow = window.open('', '_blank');
-
-        if (!fullScreenWindow) {
-            alert('Popup blocked! Please allow popups for this site.');
-            return;
-        }
-
-        // Replicating the exact same logic as grid and modal
-        if (fileSrc.startsWith('data:text/html')) {
-            fullScreenWindow.document.body.innerHTML = `<iframe src="${fileSrc}" style="
-                width: 100vw;
-                height: 100vh;
-                border: none;
-                display: block;
-                margin: 0;
-                padding: 0;
-            "></iframe>`;
-        } else if (fileSrc.startsWith('data:image')) {
-            fullScreenWindow.document.body.innerHTML = `<img src="${fileSrc}" style="
-                width: 100vw;
-                height: 100vh;
-                object-fit: contain;
-                display: block;
-                margin: 0;
-                padding: 0;
-            ">`;
-        } else {
-            console.warn(`Unsupported file type: ${fileSrc}`);
-            fullScreenWindow.document.body.innerHTML = `<p>Unsupported File Type</p>`;
-        }
-
-        // Fullscreen button click
-        const fullscreenBtn = modal.querySelector('.fullscreen-btn');
-        if (fullscreenBtn) {
-            fullscreenBtn.onclick = (event) => {
-                //event.stopPropagation();  // Prevent modal from opening
-                fullscreenBtn.onclick = () => openFullScreen(asset);
-                grid.appendChild(modal);
-            };
-        }
-    }
-
-
-
- function openModal(asset) {
-        const modal = document.getElementById('modal');
-        const modalContent = document.getElementById('modalContent');
-        const modalText = JSON.stringify(asset.onchain_metadata, null, 2);
-        const fileSrc = getFileSource(asset);
-        modal.style.display = 'block';
-
-        if (fileSrc.startsWith('data:text/html')) {
-            modalContent.innerHTML = `<iframe src="${fileSrc}" style="
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-    margin: auto;
-    transform-origin: center;
-    object-fit: contain;
-"></iframe><p>${modalText}</p>`;
-            //modal.style.display = 'block';
-        } else if (fileSrc.startsWith('data:image')) {
-            modalContent.innerHTML = `<img src="${fileSrc}"><p>${modalText}</p>`;
-            //modal.style.display = 'block';
-        } else {
-          console.warn(`Unsupported file type: ${fileSrc}`);
-          return;
-        }
+      const fileSrc = getFileSource(asset);
+      const metaText = JSON.stringify(asset.onchain_metadata, null, 2);
+      const fullScreenWindow = window.open('', '_blank');
+      if (!fullScreenWindow) {
+        alert('Popup blocked! Please allow popups for this site.');
+        return;
+      }
+      if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
+        fullScreenWindow.document.body.innerHTML = `
+          <div style="height:80vh; overflow:hidden;">
+            <iframe src="${fileSrc}" style="
+              width: 100%;
+              height: 100%;
+              border: none;
+              display: block;
+              margin: 0;
+              padding: 0;
+              object-fit: contain;
+            "></iframe>
+          </div>
+          <div style="height:20vh; overflow-y:auto; font-size: 0.8em;">
+            <pre>${metaText}</pre>
+          </div>`;
+      } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
+        fullScreenWindow.document.body.innerHTML = `
+          <div style="height:80vh; overflow:hidden;">
+            <img src="${fileSrc}" style="
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: block;
+              margin: 0;
+              padding: 0;
+            ">
+          </div>
+          <div style="height:20vh; overflow-y:auto; font-size: 0.8em;">
+            <pre>${metaText}</pre>
+          </div>`;
+      } else {
+        console.warn(`Unsupported file type: ${fileSrc}`);
+        fullScreenWindow.document.body.innerHTML = `<p>Unsupported File Type</p>`;
+      }
     }
 
     function closeModal() {
-        console.log('Modal closed');
-        document.getElementById('modal').style.display = 'none';
+      console.log('Modal closed');
+      document.getElementById('modal').style.display = 'none';
     }
 
     function hexToString(hex) {
-    return decodeURIComponent(hex.replace(/(..)/g, '%$1'));
-}
-</script>
+      return decodeURIComponent(hex.replace(/(..)/g, '%$1'));
+    }
+
+    // Dummy function for pasteFromClipboard (to be defined as needed)
+    function pasteFromClipboard() {
+      console.log('Paste functionality not implemented.');
+    }
+    // Dummy function for viewCode (to be defined as needed)
+    function viewCode() {
+      console.log('View Code functionality not implemented.');
+    }
+  </script>
 
 </body>
 </html>
