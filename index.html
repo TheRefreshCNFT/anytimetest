@@ -134,7 +134,7 @@
 
     async function handleSearch() {
         console.log('Search initiated');
-        const input = '2b642564d4e7083594811d208c00285b3676bae7e9621bcfd3a4ebaa';//document.getElementById('searchInput').value.trim();
+        const input = document.getElementById('searchInput').value.trim();
         if (/^[a-f0-9]{56,64}$/i.test(input)) {
           // Call the function properly
           const assets = await fAssets(input);
@@ -212,7 +212,8 @@
         grid.innerHTML = '';
 
         assets.forEach(asset => {
-            const fileSrc = getFileSource(asset);
+          const fileSrc = getFileSource(asset);
+console.log('fileSrc type:', typeof fileSrc, fileSrc);
             const card = document.createElement('div');
             card.className = 'asset-card';
 
@@ -258,15 +259,36 @@
             return 'placeholder.png';
         }
 
-        const filesArray = asset.onchain_metadata.files;
-        if (filesArray && filesArray.length > 0) {
-            return Array.isArray(filesArray[0].src)
-                ? filesArray[0].src.join('')
-                : filesArray[0].src;
+        // Check for CIP-25 nested structure
+        if (asset.onchain_metadata['721']) {
+            const policyIds = Object.keys(asset.onchain_metadata['721']);
+            if (policyIds.length > 0) {
+                const policy = asset.onchain_metadata['721'][policyIds[0]];
+                const assetNames = Object.keys(policy);
+                if (assetNames.length > 0) {
+                    const meta = policy[assetNames[0]];
+                    if (meta.files && meta.files.length > 0) {
+                        const srcValue = meta.files[0].src;
+                        return Array.isArray(srcValue)
+                            ? srcValue.join('')
+                            : srcValue.toString();
+                    }
+                    return meta.image ? meta.image.toString() : 'placeholder.png';
+                }
+            }
         }
 
-        return asset.onchain_metadata.image || './placeholder.png';
+        // Fallback to the original logic
+        const filesArray = asset.onchain_metadata.files;
+        if (filesArray && filesArray.length > 0) {
+            const srcValue = filesArray[0].src;
+            return Array.isArray(srcValue)
+                ? srcValue.join('')
+                : srcValue.toString();
+        }
+        return asset.onchain_metadata.image ? asset.onchain_metadata.image.toString() : 'placeholder.png';
     }
+
 
     function openFullScreen(asset) {
         console.log('Asset in openFullScreen:', asset);
