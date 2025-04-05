@@ -7,6 +7,16 @@
   <style>
     body { margin: 0; overflow: hidden; background-color: black; }
     canvas { display: block; touch-action: none; }
+    .modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #555; padding: 20px; border-radius: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    box-shadow: 0 0 20px gold; z-index: 10;
+}
+.modal button {
+    padding: 10px; background: #000; color: gold; border: none;
+    font-weight: bold; cursor: pointer; box-shadow: 0 0 10px gold;
+}
   </style>
 </head>
 <body>
@@ -19,36 +29,70 @@
 
   // Global settings
   const shapes = [];
-  const numShapes = 10; // Number of wavy shapes
+  const numShapes = 5; // Number of wavy shapes
   let time = 0;
+  const maxOverlapRatio = 0.5; // Max allowed overlap (0.5 = 50%)
+
 
   const colors = [
     "hsl(0, 100%, 50%)", "hsl(40, 100%, 50%)", "hsl(120, 100%, 50%)",
     "hsl(200, 100%, 50%)", "hsl(280, 100%, 50%)", "hsl(340, 100%, 50%)"
   ];
 
+  const textColor = "hsl(120, 100%, 50%)";
+
   // Initialize shapes with random parameters, constrained to canvas
   function initializeShapes() {
     shapes.length = 0; // Clear any existing shapes
-    for (let i = 0; i < numShapes; i++) {
-      const maxRadius = Math.min(canvas.width, canvas.height) / 4; // Max radius within bounds
-      shapes.push({
-        x: Math.random() * (canvas.width - maxRadius * 2) + maxRadius, // Constrained X
-        y: Math.random() * (canvas.height - maxRadius * 2) + maxRadius, // Constrained Y
-        radius: Math.random() * (maxRadius / 2) + maxRadius / 2, // Scaled radius
-        frequency: Math.random() * 3 + 1, // Frequency of the waves
+    const maxRadius = Math.min(canvas.width, canvas.height) / 2.75;
+
+    let attempts = 0;
+    while (shapes.length < numShapes && attempts < 1000) {
+      const radius = Math.random() * (maxRadius / 2) + maxRadius / 2;
+      const newShape = {
+        x: Math.random() * (canvas.width - radius * 2) + radius,
+        y: Math.random() * (canvas.height - radius * 2) + radius,
+        radius: radius,
+        frequency: Math.random() * 21 + 1,
         phase: Math.random() * Math.PI * 2,
-        lineDensity: Math.random() * 20 + 20, // Number of lines inside the shape
+        lineDensity: Math.random() * 25 + 25,
         color: colors[Math.floor(Math.random() * colors.length)],
-      });
+      };
+
+      // Check overlap
+      let valid = true;
+      for (let shape of shapes) {
+        const dx = shape.x - newShape.x;
+        const dy = shape.y - newShape.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = shape.radius + newShape.radius;
+
+        // Compute allowed overlap
+        const maxOverlap = Math.min(shape.radius, newShape.radius) * maxOverlapRatio;
+        if (dist < (minDist - maxOverlap)) {
+          valid = false;
+          break;
+        }
+      }
+
+      if (valid) {
+        shapes.push(newShape);
+      }
+
+      attempts++;
+    }
+
+    if (attempts >= 1000) {
+      console.warn("Reached max attempts placing shapes without excessive overlap");
     }
   }
+
 
   // Update shape parameters smoothly for transitions
   function updateShapes() {
     for (let shape of shapes) {
       shape.frequency += (Math.random() - 0.5) * 0.02; // Random wave changes
-      shape.phase += (Math.random() - 0.5) * 0.05;     // Slight phase shift
+      shape.phase += (Math.random() - 0.5) * 0.01;     // Slight phase shift
 
       // Contain positions within the canvas bounds
       shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + (Math.random() - 0.5) * 2));
@@ -113,6 +157,75 @@
     canvas.height = window.innerHeight;
     initializeShapes(); // Reinitialize shapes on resize
   });
+
+  let timer;
+        canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+
+        canvas.addEventListener("dblclick", () => {
+          clearTimeout(timer);
+            showModal();
+        });
+
+ function showModal() {
+             const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
+             const modal = document.createElement('div');
+             modal.className = 'modal';
+             if (modal) {
+               modal.style.background = "#000";
+               modal.style.boxShadow = `0 0 10px ${textColor}`;
+             }
+             options.forEach(opt => {
+                 const btn = document.createElement('button');
+                 btn.textContent = opt;
+                 btn.onclick = () => {
+                     document.body.removeChild(modal);
+                     scaleCanvas(parseInt(opt), opt.includes('t'));
+                 };
+                 modal.appendChild(btn);
+                 // Apply the styles dynamically
+                 if (btn) {
+                   btn.style.background = "#000";
+                   btn.style.color = textColor;
+                   btn.style.boxShadow = `0 0 10px ${textColor}`;
+                 }
+               });
+             document.body.appendChild(modal);
+         }
+
+         function scaleCanvas(multiplier, transparent) {
+    // Calculate the target dimensions while preserving aspect ratio
+    const originalAspectRatio = canvas.width / canvas.height;
+    const upscaleHeight = 512 * multiplier;
+    const upscaleWidth = upscaleHeight * originalAspectRatio;
+
+    // Create the offscreen canvas
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+    offscreenCanvas.width = upscaleWidth;
+    offscreenCanvas.height = upscaleHeight;
+
+    // Handle background
+    if (!transparent) {
+        offscreenCtx.fillStyle = '#000000'; // Black background
+        offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
+    }
+
+    // Calculate scaling factors
+    const scale = upscaleHeight / canvas.height;
+    const scaledWidth = canvas.width * scale;
+    const scaledHeight = canvas.height * scale;
+    const offsetX = (upscaleWidth - scaledWidth) / 2;
+    const offsetY = (upscaleHeight - scaledHeight) / 2;
+
+    // Draw the original canvas onto the offscreen canvas
+    offscreenCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+    // Save the image
+    const link = document.createElement('a');
+    link.download = `glitchin_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+    link.href = offscreenCanvas.toDataURL('image/png');
+    link.click();
+}
 </script>
 </body>
 </html>
