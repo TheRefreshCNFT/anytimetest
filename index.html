@@ -3,379 +3,131 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cardano Asset Explorer</title>
+  <title>Dynamic Random Patterns</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-    body {
-      background-color: #000;
-      color: #fff;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      padding: 20px;
-    }
-    #logo {
-      width: 50px;
-      margin-right: 15px;
-    }
-    .search-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 20px;
-    }
-    #searchInput {
-      width: 400px;
-      padding: 10px;
-      background-color: #333;
-      border: 1px solid #fff;
-      color: #fff;
-    }
-    button, #viewDropdown, #collectionDropdown {
-      padding: 10px 20px;
-      margin-left: 10px;
-      cursor: pointer;
-    }
-    #assetGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      justify-items: center;
-    }
-    .asset-card {
-      width: 100%;
-      padding: 10px;
-      background-color: #1a1a1a;
-      border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.3);
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-    .asset-card:hover {
-      transform: scale(1.1);
-    }
-    .asset-image {
-      width: 100%;
-      height: 100px;
-      object-fit: contain;
-      border-radius: 5px;
-    }
-    .asset-preview.small,
-    .asset-image.small {
-      width: 200px;
-      height: 200px;
-      object-fit: cover;
-    }
-    .asset-preview.medium,
-    .asset-image.medium {
-      width: 40%;
-      height: 50%;
-      object-fit: contain;
-    }
-    /* Modal container styling */
-    #modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.9);
-    }
-    #modal .modal-inner {
-      position: relative;
-      margin: auto;
-      padding: 20px;
-      background-color: #1a1a1a;
-      border-radius: 10px;
-      width: 80%;
-      height: 80%;
-      overflow-y: auto;
-    }
+    body { margin: 0; overflow: hidden; background-color: black; }
+    canvas { display: block; touch-action: none; }
   </style>
 </head>
 <body>
+<canvas id="patternCanvas"></canvas>
+<script>
+  const canvas = document.getElementById("patternCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-  <header>
-    <img src="https://cryptologos.cc/logos/cardano-ada-logo.png" alt="Cardano Logo" id="logo">
-    <h1>Cardano Asset Explorer</h1>
-  </header>
+  // Random starting variables
+  let baseFrequencyX = Math.random() * 0.02 + 0.01;
+  let baseFrequencyY = Math.random() * 0.02 + 0.01;
+  let intensity = Math.random() * 150 + 50;
 
-  <main>
-    <div class="search-container">
-      <!-- The input is still here, but a default policy is set and auto-searched on load -->
-      <input type="text" id="searchInput" placeholder="Enter Policy ID or Wallet Address">
-      <button onclick="handleSearch()">Search</button>
-      <button onclick="pasteFromClipboard()">Paste</button>
-      <select id="collectionDropdown"></select>
-      <select id="viewDropdown">
-        <option value="1" selected>1</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
-        <option value="all">All</option>
-      </select>
-    </div>
-    <div id="assetGrid"></div>
-  </main>
+  let targetFrequencyX = baseFrequencyX;
+  let targetFrequencyY = baseFrequencyY;
+  let targetIntensity = intensity;
 
-  <div id="modal">
-    <div class="modal-inner">
-      <button onclick="closeModal()">Close</button>
-      <button class="fullscreen-btn" onclick="openFullScreen(currentAsset)">View Fullscreen</button>
-      <button onclick="viewCode()">View Code</button>
-      <div id="modalContent"></div>
-    </div>
-  </div>
+  let phaseShiftX = Math.random() * Math.PI * 2; // Random phase shifts
+  let phaseShiftY = Math.random() * Math.PI * 2;
 
-  <script>
-    const BLOCKFROST_API_KEY = 'mainnetehvvvJVoJUAz5DFJJz2L9fHZmkXlXTMP';
-    const BLOCKFROST_URL = 'https://cardano-mainnet.blockfrost.io/api/v0';
-    // Set your default policy ID here
-    const defaultPolicy = "2b642564d4e7083594811d208c00285b3676bae7e9621bcfd3a4ebaa";
-    // Store the current asset for full screen use
-    let currentAsset = null;
+  const colors = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF", "#FF0000"];
 
-    // On page load, populate the input with the default policy and auto-search.
-    window.onload = async () => {
-      document.getElementById('searchInput').value = defaultPolicy;
-      await handleSearch();
-    };
+  let isDragging = false;
+  let lastX = 0;
 
-    async function handleSearch() {
-      console.log('Search initiated');
-      const input = document.getElementById('searchInput').value.trim();
-      if (/^[a-f0-9]{56,64}$/i.test(input)) {
-        const assets = await fAssets(input);
-        console.log('Assets fetched:', assets);
-        renderAssets(assets);
-      } else {
-        console.error('Invalid input');
+  // Smooth interpolation to new random targets
+  function interpolateParameters() {
+    baseFrequencyX += (targetFrequencyX - baseFrequencyX) * 0.01;
+    baseFrequencyY += (targetFrequencyY - baseFrequencyY) * 0.01;
+    intensity += (targetIntensity - intensity) * 0.01;
+
+    // When values are close enough, pick new random targets
+    if (Math.abs(baseFrequencyX - targetFrequencyX) < 0.0001) {
+      targetFrequencyX = Math.random() * 0.02 + 0.01;
+    }
+    if (Math.abs(baseFrequencyY - targetFrequencyY) < 0.0001) {
+      targetFrequencyY = Math.random() * 0.02 + 0.01;
+    }
+    if (Math.abs(intensity - targetIntensity) < 1) {
+      targetIntensity = Math.random() * 100 + 30;
+    }
+  }
+
+  function drawPattern(time) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = "lighter";
+
+    const rows = 80;
+    const cols = 80;
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const x = j * (canvas.width / cols);
+        const y = i * (canvas.height / rows);
+
+        // Randomized oscillation with phase shifts
+        const offsetX = Math.sin((time * baseFrequencyX) + phaseShiftX + (i * 0.1)) * intensity;
+        const offsetY = Math.cos((time * baseFrequencyY) + phaseShiftY + (j * 0.1)) * intensity;
+
+        const radius = Math.abs(offsetX * offsetY) / 2000 + 2;
+
+        // Vibrant color gradients
+        const gradient = ctx.createRadialGradient(x + offsetX, y + offsetY, radius / 2, x, y, radius);
+        gradient.addColorStop(0, colors[(i + j) % colors.length]);
+        gradient.addColorStop(0.5, "#000000");
+        gradient.addColorStop(1, "black");
+
+        ctx.fillStyle = gradient;
+
+        ctx.beginPath();
+        ctx.arc(x + offsetX, y + offsetY, radius, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
+  }
 
-    async function fAssets(input) {
-      console.log('Input Policy ID:', input);
-      try {
-        const response = await fetch(`${BLOCKFROST_URL}/assets/policy/${input}`, {
-          headers: { 'project_id': BLOCKFROST_API_KEY }
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch policy assets: ${response.status} ${response.statusText}`);
-        }
-        const assetsList = await response.json();
-        console.log('Assets List:', assetsList);
-        if (!Array.isArray(assetsList) || assetsList.length === 0) {
-          console.warn('Assets list is empty or not an array');
-          return [];
-        }
-        let assets = [];
-        for (const asset of assetsList) {
-          console.log(`Fetching asset: ${asset.asset}`);
-          const assetResponse = await fetch(`${BLOCKFROST_URL}/assets/${asset.asset}`, {
-            headers: { 'project_id': BLOCKFROST_API_KEY }
-          });
-          if (!assetResponse.ok) {
-            console.error(`Failed to fetch asset ${asset.asset}: ${assetResponse.status} ${assetResponse.statusText}`);
-            continue;
-          }
-          const data = await assetResponse.json();
-          if (!data) {
-            console.warn(`No data for asset: ${asset.asset}`);
-            continue;
-          }
-          assets.push(data);
-        }
-        console.log('Fetched Assets:', assets);
-        return assets;
-      } catch (error) {
-        console.error('Error fetching assets:', error);
-        return [];
-      }
-    }
+  function animate(time) {
+    interpolateParameters();
+    drawPattern(time * 0.02); // Normalize time
+    requestAnimationFrame(animate);
+  }
 
-    function renderAssets(assets) {
-      console.log('Rendering assets');
-      const grid = document.getElementById('assetGrid');
-      grid.innerHTML = '';
-      assets.forEach(asset => {
-        const fileSrc = getFileSource(asset);
-        console.log('fileSrc type:', typeof fileSrc, fileSrc);
-        const card = document.createElement('div');
-        card.className = 'asset-card';
-        if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
-          card.innerHTML = `
-            <iframe src="${fileSrc}" class="asset-preview small"></iframe>
-            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
-            <button class="fullscreen-btn" onclick="openFullScreen(asset)">Full Screen</button>`;
-        } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
-          card.innerHTML = `
-            <img src="${fileSrc}" class="asset-image small">
-            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>
-            <button class="fullscreen-btn" onclick="openFullScreen(asset)">Full Screen</button>`;
-        } else {
-          card.innerHTML = `
-            <p>Unsupported File Type</p>
-            <p>${asset.onchain_metadata?.name || 'Unnamed'}</p>`;
-        }
-        // When a card is clicked, open the modal and store the asset globally.
-        card.onclick = () => {
-          currentAsset = asset;
-          openModal(asset);
-        };
-        grid.appendChild(card);
-      });
-    }
+  animate(0);
 
-    function getFileSource(asset) {
-      if (!asset || !asset.onchain_metadata) {
-        console.warn('Invalid asset in getFileSource:', asset);
-        return 'placeholder.png';
-      }
-      // Check for CIP-25 nested structure
-      if (asset.onchain_metadata['721']) {
-        const policyIds = Object.keys(asset.onchain_metadata['721']);
-        if (policyIds.length > 0) {
-          const policy = asset.onchain_metadata['721'][policyIds[0]];
-          const assetNames = Object.keys(policy);
-          if (assetNames.length > 0) {
-            const meta = policy[assetNames[0]];
-            if (meta.files && meta.files.length > 0) {
-              const srcValue = meta.files[0].src;
-              return Array.isArray(srcValue)
-                ? srcValue.join('')
-                : srcValue.toString();
-            }
-            return meta.image ? meta.image.toString() : 'placeholder.png';
-          }
-        }
-      }
-      // Fallback to top-level metadata
-      const filesArray = asset.onchain_metadata.files;
-      if (filesArray && filesArray.length > 0) {
-        const srcValue = filesArray[0].src;
-        return Array.isArray(srcValue)
-          ? srcValue.join('')
-          : srcValue.toString();
-      }
-      return asset.onchain_metadata.image ? asset.onchain_metadata.image.toString() : 'placeholder.png';
-    }
+  // Cross-device drag interaction to adjust intensity
+  function handleDragStart(e) {
+    isDragging = true;
+    lastX = e.clientX || e.touches[0].clientX;
+  }
 
-    // Updated openModal: splits the modal into an 80% large iframe (or image) area and a 20% meta area below.
-    function openModal(asset) {
-      const modal = document.getElementById('modal');
-      const modalContent = document.getElementById('modalContent');
-      const metaText = JSON.stringify(asset.onchain_metadata, null, 2);
-      const fileSrc = getFileSource(asset);
-      modal.style.display = 'block';
-      if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
-        modalContent.innerHTML = `
-          <div style="height:80%; overflow:hidden;">
-            <iframe src="${fileSrc}" style="
-              width: 100%;
-              height: 100%;
-              border: none;
-              display: block;
-              margin: 0;
-              padding: 0;
-              object-fit: contain;
-            "></iframe>
-          </div>
-          <div style="height:20%; overflow-y:auto; font-size: 0.8em; margin-top:10px;">
-            <pre>${metaText}</pre>
-          </div>`;
-      } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
-        modalContent.innerHTML = `
-          <div style="height:80%; overflow:hidden;">
-            <img src="${fileSrc}" style="
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-              display: block;
-              margin: 0;
-              padding: 0;
-            ">
-          </div>
-          <div style="height:20%; overflow-y:auto; font-size: 0.8em; margin-top:10px;">
-            <pre>${metaText}</pre>
-          </div>`;
-      } else {
-        console.warn(`Unsupported file type: ${fileSrc}`);
-        return;
-      }
+  function handleDragMove(e) {
+    if (isDragging) {
+      const clientX = e.clientX || e.touches[0].clientX;
+      const deltaX = clientX - lastX;
+      intensity += deltaX * 0.5;
+      intensity = Math.max(20, Math.min(intensity, 100));
+      lastX = clientX;
     }
+  }
 
-    // Updated openFullScreen: opens a new window with the asset content taking primary focus and meta below.
-    function openFullScreen(asset) {
-      const fileSrc = getFileSource(asset);
-      const metaText = JSON.stringify(asset.onchain_metadata, null, 2);
-      const fullScreenWindow = window.open('', '_blank');
-      if (!fullScreenWindow) {
-        alert('Popup blocked! Please allow popups for this site.');
-        return;
-      }
-      if (typeof fileSrc === "string" && fileSrc.startsWith('data:text/html')) {
-        fullScreenWindow.document.body.innerHTML = `
-          <div style="height:80vh; overflow:hidden;">
-            <iframe src="${fileSrc}" style="
-              width: 100%;
-              height: 100%;
-              border: none;
-              display: block;
-              margin: 0;
-              padding: 0;
-              object-fit: contain;
-            "></iframe>
-          </div>
-          <div style="height:20vh; overflow-y:auto; font-size: 0.8em;">
-            <pre>${metaText}</pre>
-          </div>`;
-      } else if (typeof fileSrc === "string" && fileSrc.startsWith('data:image')) {
-        fullScreenWindow.document.body.innerHTML = `
-          <div style="height:80vh; overflow:hidden;">
-            <img src="${fileSrc}" style="
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-              display: block;
-              margin: 0;
-              padding: 0;
-            ">
-          </div>
-          <div style="height:20vh; overflow-y:auto; font-size: 0.8em;">
-            <pre>${metaText}</pre>
-          </div>`;
-      } else {
-        console.warn(`Unsupported file type: ${fileSrc}`);
-        fullScreenWindow.document.body.innerHTML = `<p>Unsupported File Type</p>`;
-      }
-    }
+  function handleDragEnd() {
+    isDragging = false;
+  }
 
-    function closeModal() {
-      console.log('Modal closed');
-      document.getElementById('modal').style.display = 'none';
-    }
+  // Event listeners for drag (mouse and touch)
+  canvas.addEventListener("mousedown", handleDragStart);
+  canvas.addEventListener("mousemove", handleDragMove);
+  canvas.addEventListener("mouseup", handleDragEnd);
+  canvas.addEventListener("mouseleave", handleDragEnd);
 
-    function hexToString(hex) {
-      return decodeURIComponent(hex.replace(/(..)/g, '%$1'));
-    }
+  canvas.addEventListener("touchstart", handleDragStart);
+  canvas.addEventListener("touchmove", handleDragMove);
+  canvas.addEventListener("touchend", handleDragEnd);
 
-    // Dummy function for pasteFromClipboard (to be defined as needed)
-    function pasteFromClipboard() {
-      console.log('Paste functionality not implemented.');
-    }
-    // Dummy function for viewCode (to be defined as needed)
-    function viewCode() {
-      console.log('View Code functionality not implemented.');
-    }
-  </script>
-
+  // Canvas resize support
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+</script>
 </body>
 </html>
