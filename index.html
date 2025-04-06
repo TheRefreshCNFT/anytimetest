@@ -28,12 +28,15 @@ canvas.height = window.innerHeight;
 
 // Global constants for shape behavior
 const numShapes = 3;
-const maxOverlapRatio = 0.8;
-const maxRadius = Math.min(canvas.width, canvas.height) / 2.85;
+const maxOverlapRatio = 0.6;
+const maxRadius = Math.min(canvas.width, canvas.height) / 3;
+const CENTER_X = canvas.width / 2;
+const CENTER_Y = canvas.height / 2;
+const CONTAINMENT_RADIUS = canvas.width / 4; // Adjust this value as needed.
 
 // Global constants for glitch hops
-const GLITCH_HOP_PROBABILITY = 0.2;  // 2% chance per frame per shape
-const GLITCH_HOP_MAGNITUDE = 300;      // Offset in pixels for glitch hop
+const GLITCH_HOP_PROBABILITY = 0.1;  // 2% chance per frame per shape
+const GLITCH_HOP_MAGNITUDE = 750;      // Offset in pixels for glitch hop
 
 const colors = [
   'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
@@ -106,6 +109,18 @@ function updateShapes() {
       const glitchY = (Math.random() - 0.5) * GLITCH_HOP_MAGNITUDE;
       shape.x += glitchX;
       shape.y += glitchY;
+    }
+
+    // After updating shape.x and shape.y...
+    const dx = shape.x - CENTER_X;
+    const dy = shape.y - CENTER_Y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > CONTAINMENT_RADIUS) {
+      // Calculate the angle of the shape relative to the center.
+      const angle = Math.atan2(dy, dx);
+      // Project the shape back onto the circle's edge.
+      shape.x = CENTER_X + CONTAINMENT_RADIUS * Math.cos(angle);
+      shape.y = CENTER_Y + CONTAINMENT_RADIUS * Math.sin(angle);
     }
 
     // Faster flips
