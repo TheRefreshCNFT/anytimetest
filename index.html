@@ -58,7 +58,7 @@
         lineDensity: Math.random() * 75 + 35,
         color: colors[Math.floor(Math.random() * colors.length)],
         flipPhase: 0,
-        flipSpeed: Math.random() * 0.01 + 0.025,
+        flipSpeed: Math.random() * 0.0075 + 0.015,
         flipAxis: Math.random() < 0.5 ? 'x' : 'y',
         flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
         rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
@@ -278,7 +278,7 @@
 
     // Save the image
     const link = document.createElement('a');
-    link.download = `glitchin_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+    link.download = `gtfo_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
     link.href = offscreenCanvas.toDataURL('image/png');
     link.click();
 }
