@@ -32,8 +32,8 @@
   const maxOverlapRatio = 0.85;
 
   const colors = [
-    "hsl(60, 100%, 50%)", "hsl(40, 100%, 50%)", "hsl(220, 100%, 50%)",
-    "hsl(200, 100%, 50%)", "hsl(280, 100%, 50%)", "hsl(310, 100%, 50%)"
+    'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)',
+    'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)'
   ];
 
   function normalizeVector(vec) {
@@ -55,12 +55,12 @@
         radius,
         frequency: Math.random() * 21 + 1,
         phase: Math.random() * Math.PI * 2,
-        lineDensity: Math.random() * 25 + 25,
+        lineDensity: Math.random() * 75 + 35,
         color: colors[Math.floor(Math.random() * colors.length)],
         flipPhase: 0,
-        flipSpeed: Math.random() * 0.01 + 0.0025,
+        flipSpeed: Math.random() * 0.01 + 0.025,
         flipAxis: Math.random() < 0.5 ? 'x' : 'y',
-        flipTarget: (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
+        flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
         rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
       };
 
@@ -89,23 +89,27 @@
 
   function updateShapes() {
     for (let shape of shapes) {
-      shape.frequency += (Math.random() - 0.5) * 0.1;
-      shape.phase += (Math.random() - 0.4) * 0.25;
+      // Drastic wave frequency + phase jumps = wiggly chaos
+      shape.frequency += (Math.random() - 0.5) * 0.25; // ⬆️ was 0.1
+      shape.phase += (Math.random() - 0.5) * 0.5;     // ⬆️ was 0.25
 
-      const jitterX = (Math.random() - 0.5) * 4;
-      const jitterY = (Math.random() - 0.5) * 4;
+      // Major positional jitter — this is the "teleportiness"
+      const jitterX = (Math.random() - 0.5) * 12; // ⬆️ was 4
+      const jitterY = (Math.random() - 0.5) * 12; // ⬆️ was 4
       shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
       shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
 
-      shape.flipPhase += shape.flipSpeed;
+      // Faster flips
+      shape.flipPhase += shape.flipSpeed * (Math.random() * 1.5 + 0.5); // randomizes rotation tick rate
       if (shape.flipPhase >= shape.flipTarget) {
         shape.flipPhase = 0;
         shape.flipAxis = Math.random() < 0.5 ? 'x' : 'y';
-        shape.flipSpeed = Math.random() * 0.02 + 0.01;
+        shape.flipSpeed = Math.random() * 0.025 + 0.02; // ⬆️ faster flip speed
         shape.flipTarget = (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2;
       }
     }
   }
+
 
   const noiseSeed = [];
   for (let i = 0; i < 256; i++) noiseSeed[i] = Math.random();
@@ -132,7 +136,7 @@
 
     // Apply simulated 3D rotation around random axis
     const scale = Math.cos(flipPhase);      // Controls "thickness"
-    const skew = Math.sin(flipPhase) * 0.8; // Adds perspective distortion
+    const skew = Math.sin(flipPhase) * 1.75; // Adds perspective distortion
     const a = 1 + rotationAxis.x * skew;
     const b = rotationAxis.y * skew;
     const c = rotationAxis.x * skew;
@@ -141,7 +145,7 @@
 
     // --- Draw filled wavy shape ---
     ctx.beginPath();
-    for (let angle = 0; angle <= Math.PI * 2; angle += 0.0025) {
+    for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
       const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (18 + Math.random() * 4);
       const r = radius + wave * 0.5 + Math.random() * 2;
       const posX = Math.cos(angle) * r;
@@ -151,7 +155,7 @@
     }
     ctx.closePath();
     ctx.fillStyle = color;
-    ctx.globalAlpha = .8;
+    ctx.globalAlpha = .7;
     ctx.fill();
 
     // --- Draw inner lines ---
@@ -163,11 +167,18 @@
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.01) {
         const n = noise(angle * 0.5 + i * 0.1 + time * 0.2); // smooth organic wave
         const wave = Math.sin(angle * frequency + phase + linePhase) * 75 * n;
-        const r = radius + wave * 0.6;
+        const r = radius + wave * 0.9;
 
         const progress = i / lineDensity;
-        const posX = Math.cos(angle) * r * progress;
-        const posY = Math.sin(angle) * r * progress;
+        // Puffiness factor based on flip thickness
+        const puff = .005 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
+        const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
+
+        const puffedRadius = r * (progress + puff * 1 * puffCurve);
+
+        const posX = Math.cos(angle) * puffedRadius;
+        const posY = Math.sin(angle) * puffedRadius;
+
 
         if (angle === 0) ctx.moveTo(posX, posY);
         else ctx.lineTo(posX, posY);
