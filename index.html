@@ -29,7 +29,8 @@
   const shapes = [];
   const numShapes = 3;
   let time = 0;
-  const maxOverlapRatio = 0.9;
+  const maxOverlapRatio = 0.5;
+  const maxRadius = Math.min(canvas.width, canvas.height) / 2.75;
 
   const colors = [
     'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
@@ -43,7 +44,7 @@
 
   function initializeShapes() {
     shapes.length = 0;
-    const maxRadius = Math.min(canvas.width, canvas.height) / 2;
+
 
     let attempts = 0;
     while (shapes.length < numShapes && attempts < 2000) {
@@ -58,7 +59,7 @@
         lineDensity: Math.random() * 75 + 35,
         color: colors[Math.floor(Math.random() * colors.length)],
         flipPhase: 0,
-        flipSpeed: Math.random() * 0.0075 + 0.015,
+        flipSpeed: Math.random() * 0.005 + 0.01,
         flipAxis: Math.random() < 0.5 ? 'x' : 'y',
         flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
         rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
@@ -146,7 +147,7 @@
     // --- Draw filled wavy shape ---
     ctx.beginPath();
     for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
-      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (18 + Math.random() * 4);
+      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (2 + Math.random() * 36);
       const r = radius + wave * 0.5 + Math.random() * 2;
       const posX = Math.cos(angle) * r;
       const posY = Math.sin(angle) * r;
@@ -167,11 +168,11 @@
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.01) {
         const n = noise(angle * 0.5 + i * 0.1 + time * 0.2); // smooth organic wave
         const wave = Math.sin(angle * frequency + phase + linePhase) * 75 * n;
-        const r = radius + wave * 0.9;
+        const r = radius + wave * 0.95;
 
         const progress = i / lineDensity;
         // Puffiness factor based on flip thickness
-        const puff = .5 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
+        const puff = 1 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
         const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
 
         const puffedRadius = r * (progress + puff * 1 * puffCurve);
