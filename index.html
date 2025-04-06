@@ -215,12 +215,25 @@
   });
 
   let timer;
-        canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+  canvas.addEventListener("click", (e) => {
+    // Prevent default behavior immediately
+    e.preventDefault();
+    if (e.detail === 1) {
+      timer = setTimeout(() => {
+        // Single click action: reload the page
+        location.reload();
+      }, 300);
+    }
+  });
 
-        canvas.addEventListener("dblclick", () => {
-          clearTimeout(timer);
-            showModal();
-        });
+  canvas.addEventListener("dblclick", (e) => {
+    // Prevent default behavior immediately
+    e.preventDefault();
+    // Cancel the single click action if a double click occurs
+    clearTimeout(timer);
+    // Execute double-click action: show modal
+    showModal();
+  });
 
  function showModal() {
              const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
