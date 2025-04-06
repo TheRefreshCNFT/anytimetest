@@ -215,25 +215,37 @@
   });
 
   let timer;
-  canvas.addEventListener("click", (e) => {
-    // Prevent default behavior immediately
-    e.preventDefault();
+  let lastTap = 0;
+  const DOUBLE_TAP_DELAY = 300; // milliseconds
+
+  // For mouse events on desktop, Android, etc.
+  canvas.addEventListener("click", e => {
     if (e.detail === 1) {
-      timer = setTimeout(() => {
-        // Single click action: reload the page
-        location.reload();
-      }, 300);
+      timer = setTimeout(() => location.reload(), DOUBLE_TAP_DELAY);
     }
   });
 
-  canvas.addEventListener("dblclick", (e) => {
-    // Prevent default behavior immediately
-    e.preventDefault();
-    // Cancel the single click action if a double click occurs
+  canvas.addEventListener("dblclick", () => {
     clearTimeout(timer);
-    // Execute double-click action: show modal
     showModal();
   });
+
+  // For iOS (and other touch devices) double-tap detection
+  canvas.addEventListener("touchend", function(e) {
+    const currentTime = new Date().getTime();
+    const tapInterval = currentTime - lastTap;
+    if (tapInterval < DOUBLE_TAP_DELAY && tapInterval > 0) {
+      // Double-tap detected; prevent the single-tap action
+      e.preventDefault(); // prevents zooming and synthetic click events
+      clearTimeout(timer);
+      showModal();
+    } else {
+      // Single tap: schedule reload action if no double-tap follows
+      timer = setTimeout(() => location.reload(), DOUBLE_TAP_DELAY);
+    }
+    lastTap = currentTime;
+  });
+
 
  function showModal() {
              const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
