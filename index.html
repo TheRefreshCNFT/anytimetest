@@ -21,199 +21,203 @@
 <body>
 <canvas id="patternCanvas"></canvas>
 <script>
-  const canvas = document.getElementById("patternCanvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+const canvas = document.getElementById("patternCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  const shapes = [];
-  const numShapes = 3;
-  let time = 0;
-  const maxOverlapRatio = 0.5;
-  const maxRadius = Math.min(canvas.width, canvas.height) / 2.85;
+// Global constants for shape behavior
+const numShapes = 3;
+const maxOverlapRatio = 0.8;
+const maxRadius = Math.min(canvas.width, canvas.height) / 2.85;
 
-  const colors = [
-    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
-    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)'
-  ];
+// Global constants for glitch hops
+const GLITCH_HOP_PROBABILITY = 0.2;  // 2% chance per frame per shape
+const GLITCH_HOP_MAGNITUDE = 300;      // Offset in pixels for glitch hop
 
-  function normalizeVector(vec) {
-    const mag = Math.hypot(vec.x, vec.y);
-    return { x: vec.x / mag, y: vec.y / mag };
-  }
+const colors = [
+  'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
+  'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)'
+];
 
-  function initializeShapes() {
-    shapes.length = 0;
+function normalizeVector(vec) {
+  const mag = Math.hypot(vec.x, vec.y);
+  return { x: vec.x / mag, y: vec.y / mag };
+}
 
+const shapes = [];
+let time = 0;
 
-    let attempts = 0;
-    while (shapes.length < numShapes && attempts < 2000) {
-      const radius = Math.random() * (maxRadius / 2.75) + maxRadius / 2.75;
+function initializeShapes() {
+  shapes.length = 0;
+  let attempts = 0;
+  while (shapes.length < numShapes && attempts < 2000) {
+    const radius = Math.random() * (maxRadius / 2.75) + maxRadius / 2.75;
+    const newShape = {
+      x: Math.random() * (canvas.width - radius * 2) + radius,
+      y: Math.random() * (canvas.height - radius * 2) + radius,
+      radius,
+      frequency: Math.random() * 21 + 1,
+      phase: Math.random() * Math.PI * 2,
+      lineDensity: Math.random() * 75 + 35,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      flipPhase: 0,
+      flipSpeed: Math.random() * 0.005 + 0.01,
+      flipAxis: Math.random() < 0.5 ? 'x' : 'y',
+      flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
+      rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
+    };
 
-      const newShape = {
-        x: Math.random() * (canvas.width - radius * 2) + radius,
-        y: Math.random() * (canvas.height - radius * 2) + radius,
-        radius,
-        frequency: Math.random() * 21 + 1,
-        phase: Math.random() * Math.PI * 2,
-        lineDensity: Math.random() * 75 + 35,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        flipPhase: 0,
-        flipSpeed: Math.random() * 0.005 + 0.01,
-        flipAxis: Math.random() < 0.5 ? 'x' : 'y',
-        flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
-        rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
-      };
-
-      let valid = true;
-      for (let shape of shapes) {
-        const dx = shape.x - newShape.x;
-        const dy = shape.y - newShape.y;
-        const dist = Math.hypot(dx, dy);
-        const minDist = shape.radius + newShape.radius;
-        const maxOverlap = Math.min(shape.radius, newShape.radius) * maxOverlapRatio;
-        if (dist < (minDist - maxOverlap)) {
-          valid = false;
-          break;
-        }
-      }
-
-      if (valid) shapes.push(newShape);
-      attempts++;
-    }
-
-    if (attempts >= 1000) {
-      console.warn("Reached max attempts placing shapes without excessive overlap");
-    }
-  }
-
-
-  function updateShapes() {
+    let valid = true;
     for (let shape of shapes) {
-      // Drastic wave frequency + phase jumps = wiggly chaos
-      shape.frequency += (Math.random() - 0.5) * 0.25; // ⬆️ was 0.1
-      shape.phase += (Math.random() - 0.5) * 0.25;     // ⬆️ was 0.25
-
-      // Major positional jitter — this is the "teleportiness"
-      const jitterX = (Math.random() - 0.5) * 64; // ⬆️ was 4
-      const jitterY = (Math.random() - 0.5) * 64; // ⬆️ was 4
-      shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
-      shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
-
-      // Faster flips
-      shape.flipPhase += shape.flipSpeed * (Math.random() * 1.5 + 0.5); // randomizes rotation tick rate
-      if (shape.flipPhase >= shape.flipTarget) {
-        shape.flipPhase = 0;
-        shape.flipAxis = Math.random() < 0.5 ? 'x' : 'y';
-        shape.flipSpeed = Math.random() * 0.02 + 0.01; // ⬆️ faster flip speed
-        shape.flipTarget = (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2;
+      const dx = shape.x - newShape.x;
+      const dy = shape.y - newShape.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = shape.radius + newShape.radius;
+      const maxOverlap = Math.min(shape.radius, newShape.radius) * maxOverlapRatio;
+      if (dist < (minDist - maxOverlap)) {
+        valid = false;
+        break;
       }
     }
+    if (valid) shapes.push(newShape);
+    attempts++;
   }
-
-
-  const noiseSeed = [];
-  for (let i = 0; i < 256; i++) noiseSeed[i] = Math.random();
-
-  function noise(x) {
-    const i = Math.floor(x) % 256;
-    const f = x - Math.floor(x);
-    const u = f * f * (3 - 2 * f);
-    return lerp(noiseSeed[i], noiseSeed[(i + 1) % 256], u);
+  if (attempts >= 1000) {
+    console.warn("Reached max attempts placing shapes without excessive overlap");
   }
+}
 
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
+function updateShapes() {
+  for (let shape of shapes) {
+    // Drastic wave frequency + phase jumps = wiggly chaos
+    shape.frequency += (Math.random() - 0.5) * 0.25; // ⬆️ was 0.1
+    shape.phase += (Math.random() - 0.5) * 0.25;     // ⬆️ was 0.25
+
+    // Major positional jitter — this is the "teleportiness"
+    const jitterX = (Math.random() - 0.5) * 64; // ⬆️ was 4
+    const jitterY = (Math.random() - 0.5) * 64; // ⬆️ was 4
+    shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
+    shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
+
+    // --- Glitch hops: random small offset at a defined probability ---
+    if (Math.random() < GLITCH_HOP_PROBABILITY) {
+      const glitchX = (Math.random() - 0.5) * GLITCH_HOP_MAGNITUDE;
+      const glitchY = (Math.random() - 0.5) * GLITCH_HOP_MAGNITUDE;
+      shape.x += glitchX;
+      shape.y += glitchY;
+    }
+
+    // Faster flips
+    // Compute how "flat" the shape currently is. When abs(cos) is low, the shape is flat.
+    const currentCos = Math.abs(Math.cos(shape.flipPhase));
+    // When currentCos is low (near 0), speedAdjustment is higher so that we quickly move out of flat view.
+    // When currentCos is high (near 1), speedAdjustment is lower so that the shape lingers in a face-on view.
+    const speedAdjustment = 1 + (1 - currentCos); // Ranges from 2 (flat) to 1 (full face)
+
+    shape.flipPhase += shape.flipSpeed * (Math.random() * 1.5 + 0.5) * speedAdjustment;
+
+    if (shape.flipPhase >= shape.flipTarget) {
+      shape.flipPhase = 0;
+      shape.flipAxis = Math.random() < 0.5 ? 'x' : 'y';
+      shape.flipSpeed = Math.random() * 0.0275 + 0.0175; // ⬆️ faster flip speed
+      shape.flipTarget = (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2;
+    }
   }
+}
 
+const noiseSeed = [];
+for (let i = 0; i < 256; i++) noiseSeed[i] = Math.random();
 
-  function drawShape(shape) {
-    const { x, y, radius, frequency, phase, lineDensity, color, flipPhase, rotationAxis } = shape;
+function noise(x) {
+  const i = Math.floor(x) % 256;
+  const f = x - Math.floor(x);
+  const u = f * f * (3 - 2 * f);
+  return lerp(noiseSeed[i], noiseSeed[(i + 1) % 256], u);
+}
 
-    ctx.save(); // Save before transforming
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
 
-    // Move origin to shape center
-    ctx.translate(x, y);
+function drawShape(shape) {
+  const { x, y, radius, frequency, phase, lineDensity, color, flipPhase, rotationAxis } = shape;
+  ctx.save(); // Save before transforming
 
-    // Apply simulated 3D rotation around random axis
-    const scale = Math.cos(flipPhase);      // Controls "thickness"
-    const skew = Math.sin(flipPhase) * 2; // Adds perspective distortion
-    const a = 1 + rotationAxis.x * skew;
-    const b = rotationAxis.y * skew;
-    const c = rotationAxis.x * skew;
-    const d = 1 + rotationAxis.y * skew;
-    ctx.transform(a * scale, b, c, d * scale, 0, 0); // Apply from centered origin
+  // Move origin to shape center
+  ctx.translate(x, y);
 
-    // --- Draw filled wavy shape ---
+  // Apply simulated 3D rotation around random axis
+  const scale = Math.cos(flipPhase);      // Controls "thickness"
+  const skew = Math.sin(flipPhase) * 2; // Adds perspective distortion
+  const a = 1 + rotationAxis.x * skew;
+  const b = rotationAxis.y * skew;
+  const c = rotationAxis.x * skew;
+  const d = 1 + rotationAxis.y * skew;
+  ctx.transform(a * scale, b, c, d * scale, 0, 0); // Apply from centered origin
+
+  // --- Draw filled wavy shape ---
+  ctx.beginPath();
+  for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
+    const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (2 + Math.random() * 128);
+    const r = radius + wave * 0.5 + Math.random() * 2;
+    const posX = Math.cos(angle) * r;
+    const posY = Math.sin(angle) * r;
+    if (angle === 0) ctx.moveTo(posX, posY);
+    else ctx.lineTo(posX, posY);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = .75;
+  ctx.fill();
+
+  // --- Draw inner lines ---
+  ctx.globalAlpha = 1.0;
+  for (let i = 0; i < lineDensity; i++) {
     ctx.beginPath();
-    for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
-      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (2 + Math.random() * 128);
-      const r = radius + wave * 0.5 + Math.random() * 2;
-      const posX = Math.cos(angle) * r;
-      const posY = Math.sin(angle) * r;
+    const linePhase = (i / lineDensity) * Math.PI * 2;
+    for (let angle = 0; angle <= Math.PI * 2; angle += 0.01) {
+      const n = noise(angle * 0.5 + i * 0.1 + time * 0.2); // smooth organic wave
+      const wave = Math.sin(angle * frequency + phase + linePhase) * 75 * n;
+      const r = radius + wave * 0.95;
+      const progress = i / lineDensity;
+      // Puffiness factor based on flip thickness
+      const puff = 1 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
+      const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
+      const puffedRadius = r * (progress + puff * 1 * puffCurve);
+      const posX = Math.cos(angle) * puffedRadius;
+      const posY = Math.sin(angle) * puffedRadius;
       if (angle === 0) ctx.moveTo(posX, posY);
       else ctx.lineTo(posX, posY);
     }
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.globalAlpha = .75;
-    ctx.fill();
-
-    // --- Draw inner lines ---
-    ctx.globalAlpha = 1.0;
-    for (let i = 0; i < lineDensity; i++) {
-      ctx.beginPath();
-      const linePhase = (i / lineDensity) * Math.PI * 2;
-
-      for (let angle = 0; angle <= Math.PI * 2; angle += 0.01) {
-        const n = noise(angle * 0.5 + i * 0.1 + time * 0.2); // smooth organic wave
-        const wave = Math.sin(angle * frequency + phase + linePhase) * 75 * n;
-        const r = radius + wave * 0.95;
-
-        const progress = i / lineDensity;
-        // Puffiness factor based on flip thickness
-        const puff = 1 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
-        const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
-
-        const puffedRadius = r * (progress + puff * 1 * puffCurve);
-
-        const posX = Math.cos(angle) * puffedRadius;
-        const posY = Math.sin(angle) * puffedRadius;
-
-
-        if (angle === 0) ctx.moveTo(posX, posY);
-        else ctx.lineTo(posX, posY);
-      }
-
-      // Simulated shading
-      const shade = Math.floor(200 + noise(i * 0.5 + time * 0.1) * 55);
-      ctx.strokeStyle = 'hsl('+ 360*Math.random() +',100%,50%)';
-      ctx.stroke();
-    }
-
-
-    ctx.restore(); // Reset everything
+    // Simulated shading
+    const shade = Math.floor(200 + noise(i * 0.5 + time * 0.1) * 55);
+    ctx.strokeStyle = 'hsl('+ 360*Math.random() +',100%,50%)';
+    ctx.stroke();
   }
 
+  ctx.restore(); // Reset everything
+}
 
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateShapes();
-    for (let shape of shapes) {
-      drawShape(shape);
-    }
-    time += 0.00005;
-    requestAnimationFrame(animate);
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  updateShapes();
+  for (let shape of shapes) {
+    drawShape(shape);
   }
+  time += 0.05;
+  requestAnimationFrame(animate);
+}
 
+initializeShapes();
+animate();
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   initializeShapes();
-  animate();
+});
 
-  window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    initializeShapes();
-  });
 
   let timer;
         canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
