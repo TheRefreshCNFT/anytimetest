@@ -29,7 +29,7 @@
   const shapes = [];
   const numShapes = 3;
   let time = 0;
-  const maxOverlapRatio = 0.85;
+  const maxOverlapRatio = 0.9;
 
   const colors = [
     'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
@@ -104,7 +104,7 @@
       if (shape.flipPhase >= shape.flipTarget) {
         shape.flipPhase = 0;
         shape.flipAxis = Math.random() < 0.5 ? 'x' : 'y';
-        shape.flipSpeed = Math.random() * 0.025 + 0.02; // ⬆️ faster flip speed
+        shape.flipSpeed = Math.random() * 0.02 + 0.01; // ⬆️ faster flip speed
         shape.flipTarget = (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2;
       }
     }
@@ -155,7 +155,7 @@
     }
     ctx.closePath();
     ctx.fillStyle = color;
-    ctx.globalAlpha = .9;
+    ctx.globalAlpha = .75;
     ctx.fill();
 
     // --- Draw inner lines ---
@@ -171,7 +171,7 @@
 
         const progress = i / lineDensity;
         // Puffiness factor based on flip thickness
-        const puff = .005 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
+        const puff = .5 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
         const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
 
         const puffedRadius = r * (progress + puff * 1 * puffCurve);
@@ -195,14 +195,13 @@
   }
 
 
-
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateShapes();
     for (let shape of shapes) {
       drawShape(shape);
     }
-        time += 0.00000005;
+    time += 0.00000005;
     requestAnimationFrame(animate);
   }
 
