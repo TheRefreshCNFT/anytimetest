@@ -30,7 +30,7 @@
   const numShapes = 3;
   let time = 0;
   const maxOverlapRatio = 0.5;
-  const maxRadius = Math.min(canvas.width, canvas.height) / 2.75;
+  const maxRadius = Math.min(canvas.width, canvas.height) / 2.85;
 
   const colors = [
     'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
@@ -48,7 +48,7 @@
 
     let attempts = 0;
     while (shapes.length < numShapes && attempts < 2000) {
-      const radius = Math.random() * (maxRadius / 2) + maxRadius / 2;
+      const radius = Math.random() * (maxRadius / 2.75) + maxRadius / 2.75;
 
       const newShape = {
         x: Math.random() * (canvas.width - radius * 2) + radius,
@@ -92,7 +92,7 @@
     for (let shape of shapes) {
       // Drastic wave frequency + phase jumps = wiggly chaos
       shape.frequency += (Math.random() - 0.5) * 0.25; // ⬆️ was 0.1
-      shape.phase += (Math.random() - 0.5) * 0.5;     // ⬆️ was 0.25
+      shape.phase += (Math.random() - 0.5) * 0.25;     // ⬆️ was 0.25
 
       // Major positional jitter — this is the "teleportiness"
       const jitterX = (Math.random() - 0.5) * 64; // ⬆️ was 4
@@ -147,7 +147,7 @@
     // --- Draw filled wavy shape ---
     ctx.beginPath();
     for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
-      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (2 + Math.random() * 36);
+      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (2 + Math.random() * 128);
       const r = radius + wave * 0.5 + Math.random() * 2;
       const posX = Math.cos(angle) * r;
       const posY = Math.sin(angle) * r;
@@ -202,7 +202,7 @@
     for (let shape of shapes) {
       drawShape(shape);
     }
-    time += 0.00000005;
+    time += 0.00005;
     requestAnimationFrame(animate);
   }
 
