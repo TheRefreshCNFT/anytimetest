@@ -27,13 +27,13 @@
   canvas.height = window.innerHeight;
 
   const shapes = [];
-  const numShapes = 5;
+  const numShapes = 3;
   let time = 0;
   const maxOverlapRatio = 0.85;
 
   const colors = [
-    'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)',
-    'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)', 'hsl('+ 360*Math.random() +',100%,50%)'
+    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
+    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)'
   ];
 
   function normalizeVector(vec) {
@@ -43,7 +43,7 @@
 
   function initializeShapes() {
     shapes.length = 0;
-    const maxRadius = Math.min(canvas.width, canvas.height) / 2.65;
+    const maxRadius = Math.min(canvas.width, canvas.height) / 2;
 
     let attempts = 0;
     while (shapes.length < numShapes && attempts < 2000) {
@@ -94,8 +94,8 @@
       shape.phase += (Math.random() - 0.5) * 0.5;     // ⬆️ was 0.25
 
       // Major positional jitter — this is the "teleportiness"
-      const jitterX = (Math.random() - 0.5) * 12; // ⬆️ was 4
-      const jitterY = (Math.random() - 0.5) * 12; // ⬆️ was 4
+      const jitterX = (Math.random() - 0.5) * 64; // ⬆️ was 4
+      const jitterY = (Math.random() - 0.5) * 64; // ⬆️ was 4
       shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
       shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
 
@@ -136,7 +136,7 @@
 
     // Apply simulated 3D rotation around random axis
     const scale = Math.cos(flipPhase);      // Controls "thickness"
-    const skew = Math.sin(flipPhase) * 1.75; // Adds perspective distortion
+    const skew = Math.sin(flipPhase) * 2; // Adds perspective distortion
     const a = 1 + rotationAxis.x * skew;
     const b = rotationAxis.y * skew;
     const c = rotationAxis.x * skew;
@@ -155,7 +155,7 @@
     }
     ctx.closePath();
     ctx.fillStyle = color;
-    ctx.globalAlpha = .7;
+    ctx.globalAlpha = .9;
     ctx.fill();
 
     // --- Draw inner lines ---
@@ -186,7 +186,7 @@
 
       // Simulated shading
       const shade = Math.floor(200 + noise(i * 0.5 + time * 0.1) * 55);
-      ctx.strokeStyle = `rgb(${shade}, ${shade}, ${shade})`;
+      ctx.strokeStyle = 'hsl('+ 360*Math.random() +',100%,50%)';
       ctx.stroke();
     }
 
@@ -202,7 +202,7 @@
     for (let shape of shapes) {
       drawShape(shape);
     }
-    time += 0.02;
+    time += 0.0001;
     requestAnimationFrame(animate);
   }
 
