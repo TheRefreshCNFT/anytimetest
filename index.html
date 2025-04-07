@@ -3,6 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="fxhash.min.js"></script>
+  <script>
+  let search = new URLSearchParams(window.location.search);
+  let alphabet =
+    "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+  var fxhash =
+    search.get("fxhash") ||
+    "oo" +
+      Array(49)
+        .fill(0)
+        .map((_) => alphabet[(Math.random() * alphabet.length) | 0])
+        .join("");
+  let b58dec = (str) =>
+    [...str].reduce(
+      (p, c) => (p * alphabet.length + alphabet.indexOf(c)) | 0,
+      0
+    );
+  let fxhashTrunc = fxhash.slice(2);
+  let regex = new RegExp(".{" + ((fxhash.length / 4) | 0) + "}", "g");
+  let hashes = fxhashTrunc.match(regex).map((h) => b58dec(h));
+  let sfc32 = (a, b, c, d) => {
+    return () => {
+      a |= 0;
+      b |= 0;
+      c |= 0;
+      d |= 0;
+      var t = (((a + b) | 0) + d) | 0;
+      d = (d + 1) | 0;
+      a = b ^ (b >>> 9);
+      b = (c + (c << 3)) | 0;
+      c = (c << 21) | (c >>> 11);
+      c = (c + t) | 0;
+      return (t >>> 0) / 4294967296;
+    };
+  };
+  var fxrand = sfc32(...hashes);
+  var isFxpreview = search.get("preview") === "1";
+  </script>
   <style>
     body { margin: 0; overflow: hidden; background-color: black; }
     canvas { display: block; touch-action: none; }
@@ -21,19 +59,52 @@
 <body>
 <canvas id="patternCanvas"></canvas>
 <script>
+// fxhash platform will inject fxhash and fxrand automatically.
+// You do NOT declare or redefine them yourself.
+function mulberry32(a) {
+  return function () {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+const now = Date.now();
+const gRD = mulberry32(now);
+
+
+window.fxpreview = function () {
+  // fxhash uses this to trigger a re-render in preview
+  // You could trigger `initializeShapes()` or `location.reload()` if you want to re-roll
+  initializeShapes();
+};
+
   const canvas = document.getElementById("patternCanvas");
   const ctx = canvas.getContext("2d");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
   const shapes = [];
-  const numShapes = 3;
+  const rand = fxrand();
+  let numShapes;
+
+  if (rand < 0.15) {
+    numShapes = 1;
+  } else if (rand < 0.65) {
+    numShapes = 2;
+  } else {
+    numShapes = 3;
+  }
   let time = 0;
   const maxOverlapRatio = 0.3;
 
+  // Global constants for glitch hops
+  const GLITCH_HOP_PROBABILITY = 0.10;  // 2% chance per frame per shape
+  const GLITCH_HOP_MAGNITUDE = 400;      // Offset in pixels for glitch hop
+
   const colors = [
-    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)',
-    'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)', 'hsl('+ 360 * Math.random() +',100%,50%)'
+    'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)'
   ];
 
   function normalizeVector(vec) {
@@ -42,26 +113,32 @@
   }
 
   function initializeShapes() {
+    window.$fxhashFeatures = {
+      "Shapes": numShapes,
+      "Colors": colors,
+      "Clicks": "Clk to F5 Dbl Clk to DL"
+    };
+
     shapes.length = 0;
     const maxRadius = Math.min(canvas.width, canvas.height) / 2;
 
     let attempts = 0;
     while (shapes.length < numShapes && attempts < 2000) {
-      const radius = Math.random() * (maxRadius / 2) + maxRadius / 2;
+      const radius = gRD() * (maxRadius / 2) + maxRadius / 2;
 
       const newShape = {
-        x: Math.random() * (canvas.width - radius * 2) + radius,
-        y: Math.random() * (canvas.height - radius * 2) + radius,
+        x: gRD() * (canvas.width - radius * 2) + radius,
+        y: gRD() * (canvas.height - radius * 2) + radius,
         radius,
-        frequency: Math.random() * 21 + 1,
-        phase: Math.random() * Math.PI * 2,
-        lineDensity: Math.random() * 75 + 35,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        frequency: gRD() * 21 + 1,
+        phase: gRD() * Math.PI * 2,
+        lineDensity: gRD() * 75 + 35,
+        color: colors[Math.floor(gRD() * colors.length)],
         flipPhase: 0,
-        flipSpeed: Math.random() * 0.01 + 0.025,
-        flipAxis: Math.random() < 0.5 ? 'x' : 'y',
-        flipTarget: (Math.random() < 0.75 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2,
-        rotationAxis: normalizeVector({ x: Math.random() - 0.5, y: Math.random() - 0.5 })
+        flipSpeed: gRD() * 0.01 + 0.025,
+        flipAxis: gRD() < 0.5 ? 'x' : 'y',
+        flipTarget: (gRD() < 0.75 ? 1 : (gRD() * 0.5 + 0.25)) * Math.PI * 2,
+        rotationAxis: normalizeVector({ x: gRD() - 0.5, y: gRD() - 0.5 })
       };
 
       let valid = true;
@@ -84,35 +161,44 @@
     if (attempts >= 1000) {
       console.warn("Reached max attempts placing shapes without excessive overlap");
     }
+
   }
 
 
   function updateShapes() {
     for (let shape of shapes) {
       // Drastic wave frequency + phase jumps = wiggly chaos
-      shape.frequency += (Math.random() - 0.5) * 0.25; // ⬆️ was 0.1
-      shape.phase += (Math.random() - 0.5) * 0.5;     // ⬆️ was 0.25
+      shape.frequency += (gRD() - 0.5) * 0.25; // ⬆️ was 0.1
+      shape.phase += (gRD() - 0.5) * 0.5;     // ⬆️ was 0.25
 
       // Major positional jitter — this is the "teleportiness"
-      const jitterX = (Math.random() - 0.5) * 64; // ⬆️ was 4
-      const jitterY = (Math.random() - 0.5) * 64; // ⬆️ was 4
+      const jitterX = (gRD() - 0.5) * 64; // ⬆️ was 4
+      const jitterY = (gRD() - 0.5) * 64; // ⬆️ was 4
       shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
       shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
 
+      // --- Glitch hops: random small offset at a defined probability ---
+      if (Math.random() < GLITCH_HOP_PROBABILITY) {
+        const glitchX = (fxrand() - 0.5) * GLITCH_HOP_MAGNITUDE;
+        const glitchY = (fxrand() - 0.5) * GLITCH_HOP_MAGNITUDE;
+        shape.x += glitchX;
+        shape.y += glitchY;
+      }
+
       // Faster flips
-      shape.flipPhase += shape.flipSpeed * (Math.random() * 1.5 + 0.5); // randomizes rotation tick rate
+      shape.flipPhase += shape.flipSpeed * (gRD() * 1.5 + 0.5); // randomizes rotation tick rate
       if (shape.flipPhase >= shape.flipTarget) {
         shape.flipPhase = 0;
-        shape.flipAxis = Math.random() < 0.5 ? 'x' : 'y';
-        shape.flipSpeed = Math.random() * 0.02 + 0.01; // ⬆️ faster flip speed
-        shape.flipTarget = (Math.random() < 0.45 ? 1 : (Math.random() * 0.5 + 0.25)) * Math.PI * 2;
+        shape.flipAxis = gRD() < 0.5 ? 'x' : 'y';
+        shape.flipSpeed = gRD() * 0.02 + 0.01; // ⬆️ faster flip speed
+        shape.flipTarget = (gRD() < 0.45 ? 1 : (gRD() * 0.5 + 0.25)) * Math.PI * 2;
       }
     }
   }
 
 
   const noiseSeed = [];
-  for (let i = 0; i < 256; i++) noiseSeed[i] = Math.random();
+  for (let i = 0; i < 256; i++) noiseSeed[i] = gRD();
 
   function noise(x) {
     const i = Math.floor(x) % 256;
@@ -146,8 +232,8 @@
     // --- Draw filled wavy shape ---
     ctx.beginPath();
     for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
-      const wave = Math.sin(angle * frequency + phase + Math.random() * 0.15) * (18 + Math.random() * 4);
-      const r = radius + wave * 0.5 + Math.random() * 2;
+      const wave = Math.sin(angle * frequency + phase + gRD() * 0.15) * (18 + gRD() * 4);
+      const r = radius + wave * 0.5 + gRD() * 2;
       const posX = Math.cos(angle) * r;
       const posY = Math.sin(angle) * r;
       if (angle === 0) ctx.moveTo(posX, posY);
@@ -186,7 +272,7 @@
 
       // Simulated shading
       const shade = Math.floor(200 + noise(i * 0.5 + time * 0.1) * 55);
-      ctx.strokeStyle = 'hsl('+ 360*Math.random() +',100%,50%)';
+      ctx.strokeStyle = 'hsl('+ 360*gRD() +',100%,50%)';
       ctx.stroke();
     }
 
@@ -303,10 +389,12 @@
 
     // Save the image
     const link = document.createElement('a');
-    link.download = `glitchin_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+    link.download = `gtfo_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
     link.href = offscreenCanvas.toDataURL('image/png');
     link.click();
 }
+
+function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
 </script>
 </body>
 </html>
