@@ -105,6 +105,7 @@ window.fxpreview = function () {
   var TIME_INCREMENT = 0.00000005;
   var isAndroid = /Android/i.test(navigator.userAgent);
   var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const ANIMATION_MULTIPLIER = isAndroid ? 0.25 : 1;
 
   const colors = [
     'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)'
@@ -171,8 +172,8 @@ window.fxpreview = function () {
   function updateShapes() {
     for (let shape of shapes) {
       // Drastic wave frequency + phase jumps = wiggly chaos
-      shape.frequency += (gRD() - 0.5) * 0.25; // ⬆️ was 0.1
-      shape.phase += (gRD() - 0.5) * 0.5;     // ⬆️ was 0.25
+      shape.frequency += (gRD() - 0.5) * 0.25 * ANIMATION_MULTIPLIER;
+      shape.phase += (gRD() - 0.5) * 0.5 * ANIMATION_MULTIPLIER;
 
       // Major positional jitter — this is the "teleportiness"
       const jitterX = (gRD() - 0.5) * 64; // ⬆️ was 4
