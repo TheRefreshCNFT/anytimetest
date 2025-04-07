@@ -290,7 +290,7 @@ window.fxpreview = function () {
       drawShape(shape);
     }
     // Adjust the time increment based on device type:
-    const adjustedIncrement = TIME_INCREMENT * (isAndroid ? 0.5 : 1);
+    const adjustedIncrement = TIME_INCREMENT * (isAndroid ? 0.25 : 1);
     time += adjustedIncrement;
     requestAnimationFrame(animate);
   }
