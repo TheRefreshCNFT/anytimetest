@@ -101,7 +101,7 @@ window.fxpreview = function () {
 
   // Global constants for glitch hops
   const GLITCH_HOP_PROBABILITY = 0.10;  // 2% chance per frame per shape
-  const GLITCH_HOP_MAGNITUDE = 400;      // Offset in pixels for glitch hop
+  const GLITCH_HOP_MAGNITUDE = 300;      // Offset in pixels for glitch hop
   var TIME_INCREMENT = 0.00000005;
   var isAndroid = /Android/i.test(navigator.userAgent);
   var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -172,8 +172,8 @@ window.fxpreview = function () {
   function updateShapes() {
     for (let shape of shapes) {
       // Drastic wave frequency + phase jumps = wiggly chaos
-      shape.frequency += (gRD() - 0.5) * 0.25 * ANIMATION_MULTIPLIER;
-      shape.phase += (gRD() - 0.5) * 0.5 * ANIMATION_MULTIPLIER;
+      shape.frequency += (gRD() - 0.5) * 0.25 * 2;
+      shape.phase += (gRD() - 0.5) * 0.5 * 2;
 
       // Major positional jitter — this is the "teleportiness"
       const jitterX = (gRD() - 0.5) * 64; // ⬆️ was 4
