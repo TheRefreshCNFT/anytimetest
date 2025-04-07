@@ -102,6 +102,9 @@ window.fxpreview = function () {
   // Global constants for glitch hops
   const GLITCH_HOP_PROBABILITY = 0.10;  // 2% chance per frame per shape
   const GLITCH_HOP_MAGNITUDE = 400;      // Offset in pixels for glitch hop
+  var TIME_INCREMENT = 0.00000005;
+  var isAndroid = /Android/i.test(navigator.userAgent);
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const colors = [
     'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)'
@@ -280,17 +283,17 @@ window.fxpreview = function () {
     ctx.restore(); // Reset everything
   }
 
-
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateShapes();
     for (let shape of shapes) {
       drawShape(shape);
     }
-    time += 0.000000000005;
+    // Adjust the time increment based on device type:
+    const adjustedIncrement = TIME_INCREMENT * (isAndroid ? 0.5 : 1);
+    time += adjustedIncrement;
     requestAnimationFrame(animate);
   }
-
   initializeShapes();
   animate();
 
