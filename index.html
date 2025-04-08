@@ -51,11 +51,11 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var freezeRangeMax;
   var cycleDuration = 10000; // One complete drift cycle
   if (isAndroid) {
-    freezeRangeMin = 6000;
-    freezeRangeMax = 8000;
+    freezeRangeMin = 5000;
+    freezeRangeMax = 6000;
   } else if (isIOS) {
-      freezeRangeMin = 5000;
-      freezeRangeMax = 6000;
+      freezeRangeMin = 4000;
+      freezeRangeMax = 5000;
 
   } else {
       freezeRangeMin = 4500;
@@ -246,7 +246,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.globalCompositeOperation = "destination-out";
       var cycleDuration = 10000; // One complete drift cycle
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.0075)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.005)";
       } else if (isIOS) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.03)";
       } else {
