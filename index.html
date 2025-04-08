@@ -21,7 +21,7 @@
   var sides = 6;
   var c1 = 'hsl(0,100%,0%)';
   var c2 = 'hsl(0,100%,0%)';
-  var c3 = 'hsl(175,100%,50%)';
+  var c3 = 'hsl(57,100%,50%)';
   var c4 = 'hsl(0,100%,0%)';
   var c5 = 'hsl(0,100%,0%)';
   var st = 'hsl(0,100%,0%)';
@@ -40,22 +40,22 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var globalScaleFactor = 0.3;    // Scale reduction at each recursion step
 
   // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
-  var basePatternType = 1;
+  var basePatternType = 2;
 
   // Random offset settings for animated inner shapes (in pixels)
   var minRandomOffset = 0;
-  var maxRandomOffset = 1000;
+  var maxRandomOffset = 1200;
 
   // --- Freeze Range Settings ---
   var freezeRangeMin;
   var freezeRangeMax;
-  var cycleDuration = 10000; // One complete drift cycle
+  var cycleDuration = 15000; // One complete drift cycle
   if (isAndroid) {
-    freezeRangeMin = 5000;
-    freezeRangeMax = 5500;
+    freezeRangeMin = 4500;
+    freezeRangeMax = 5000;
   } else if (isIOS) {
-      freezeRangeMin = 3500;
-      freezeRangeMax = 4000;
+      freezeRangeMin = 6000;
+      freezeRangeMax = 8000;
 
   } else {
       freezeRangeMin = 4500;
@@ -84,7 +84,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     let elapsed = now - animationStartTime;
     let t = (elapsed % cycleDuration) / cycleDuration;
-    let windowFunc = Math.pow(Math.sin(Math.PI * t), 2);
+    let windowFunc = Math.pow(Math.sin(Math.PI * t), .5);
 
     let key = depth + "_" + index;
     let currentCycle = Math.floor(elapsed / cycleDuration);
@@ -210,7 +210,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     // Set drawing styles for the main canvas.
     dctx.lineWidth = 50;
     dctx.lineCap = "miter";
-    dctx.shadowColor = "hsl(3 100% 50%)";
+    dctx.shadowColor = "hsl(274,100%,50%)";
     dctx.shadowOffsetY = 10;
     dctx.shadowOffsetX = 5;
     //dctx.shadowBlur = 50;
@@ -246,11 +246,11 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.globalCompositeOperation = "destination-out";
       var cycleDuration = 10000; // One complete drift cycle
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.001)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.002)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.0075)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.005)";
       } else {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.01)";
       }
 
       dctx.fillRect(0, 0, dcan.width, dcan.height);
