@@ -246,9 +246,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.globalCompositeOperation = "destination-out";
       var cycleDuration = 10000; // One complete drift cycle
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.005)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.001)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.0075)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       }
