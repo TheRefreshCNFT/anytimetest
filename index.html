@@ -1,404 +1,321 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="fxhash.min.js"></script>
-  <script>
-  let search = new URLSearchParams(window.location.search);
-  let alphabet =
-    "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
-  var fxhash =
-    search.get("fxhash") ||
-    "oo" +
-      Array(49)
-        .fill(0)
-        .map((_) => alphabet[(Math.random() * alphabet.length) | 0])
-        .join("");
-  let b58dec = (str) =>
-    [...str].reduce(
-      (p, c) => (p * alphabet.length + alphabet.indexOf(c)) | 0,
-      0
-    );
-  let fxhashTrunc = fxhash.slice(2);
-  let regex = new RegExp(".{" + ((fxhash.length / 4) | 0) + "}", "g");
-  let hashes = fxhashTrunc.match(regex).map((h) => b58dec(h));
-  let sfc32 = (a, b, c, d) => {
-    return () => {
-      a |= 0;
-      b |= 0;
-      c |= 0;
-      d |= 0;
-      var t = (((a + b) | 0) + d) | 0;
-      d = (d + 1) | 0;
-      a = b ^ (b >>> 9);
-      b = (c + (c << 3)) | 0;
-      c = (c << 21) | (c >>> 11);
-      c = (c + t) | 0;
-      return (t >>> 0) / 4294967296;
-    };
-  };
-  var fxrand = sfc32(...hashes);
-  var isFxpreview = search.get("preview") === "1";
-  </script>
-  <style>
-    body { margin: 0; overflow: hidden; background-color: black; }
-    canvas { display: block; touch-action: none; }
-    .modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #555; padding: 20px; border-radius: 10px;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-    box-shadow: 0 0 20px gold; z-index: 10;
-}
-.modal button {
-    padding: 10px; background: #000; color: gold; border: none;
-    font-weight: bold; cursor: pointer; box-shadow: 0 0 10px gold;
-}
-  </style>
+<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body,html{padding:0!important;margin:0!important;margin-bottom:0;padding-bottom:0}*{padding:0;margin:0}body{background-color:#000;overflow:hidden}.img{position:absolute;object-fit:contain;display:none}#canvas1{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+
+
+  .modal {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #555; padding: 20px; border-radius: 10px;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        box-shadow: 0 0 20px gold; z-index: 10;
+    }
+    .modal button {
+        padding: 10px; background: #000; color: gold; border: none;
+        font-weight: bold; cursor: pointer; box-shadow: 0 0 10px gold;
+    }
+#mainCanvas{-webkit-user-select:none;-ms-user-select:none;user-select:none}
+</style>
 </head>
 <body>
-<canvas id="patternCanvas"></canvas>
-<script>
-// fxhash platform will inject fxhash and fxrand automatically.
-// You do NOT declare or redefine them yourself.
-function mulberry32(a) {
-  return function () {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-}
+  <canvas id="canvas1" style="object-fit:contain;position:absolute"></canvas>
 
-const now = Date.now();
-const gRD = mulberry32(now);
+  <script>
+  var sides = 6;
+  var c1 = 'hsl(0,100%,0%)';
+  var c2 = 'hsl(0,100%,0%)';
+  var c3 = 'hsl(175,100%,50%)';
+  var c4 = 'hsl(0,100%,0%)';
+  var c5 = 'hsl(0,100%,0%)';
+  var st = 'hsl(0,100%,0%)';
+  var lg1 = '500';
+  var lg2 = '700';
+  var lg3 = '800';
+  var lg4 = '300';
 
+  // --- Global Animation & Fractal Parameters ---
+  var initialRadiusFactor = 0.145;  // Global multiplier for the initial radius
+  var globalMaxDepth = 2;         // Recursion depth
+  var globalRotationAngle = Math.PI / 6; // Extra rotation for inner shapes
+  var globalScaleFactor = 0.3;    // Scale reduction at each recursion step
 
-window.fxpreview = function () {
-  // fxhash uses this to trigger a re-render in preview
-  // You could trigger `initializeShapes()` or `location.reload()` if you want to re-roll
-  initializeShapes();
-};
+  // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
+  var basePatternType = 1;
 
-  const canvas = document.getElementById("patternCanvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  // Random offset settings for animated inner shapes (in pixels)
+  var minRandomOffset = 0;
+  var maxRandomOffset = 1250;
 
-  const shapes = [];
-  const rand = fxrand();
-  let numShapes;
+  // Animation cycle duration (in milliseconds)
+  var cycleDuration = 15000; // One complete drift cycle
+  var animationStartTime = null;  // Will be set on page load
+  var vertexTargets = {};         // Store per-vertex oscillator parameters and cycle info
 
-  if (rand < 0.15) {
-    numShapes = 1;
-  } else if (rand < 0.65) {
-    numShapes = 2;
-  } else {
-    numShapes = 3;
-  }
-  let time = 0;
-  const maxOverlapRatio = 0.3;
+  // --- Freeze Range Settings ---
+  var freezeRangeMin = 5000;
+  var freezeRangeMax = 8000;
+  var freezeTimestamp = null;
 
-  // Global constants for glitch hops
-  const GLITCH_HOP_PROBABILITY = 0.10;  // 2% chance per frame per shape
-  const GLITCH_HOP_MAGNITUDE = 300;      // Offset in pixels for glitch hop
-  var TIME_INCREMENT = 0.00000005;
-  var isAndroid = /Android/i.test(navigator.userAgent);
-  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const ANIMATION_MULTIPLIER = isAndroid ? 0.25 : 1;
-
-  const colors = [
-    'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)', 'hsl('+ 360 * fxrand() +',100%,50%)'
-  ];
-
-  function normalizeVector(vec) {
-    const mag = Math.hypot(vec.x, vec.y);
-    return { x: vec.x / mag, y: vec.y / mag };
+  // --- Utility: Release Canvas ---
+  function releaseCanvas(canvas) {
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.clearRect(0, 0, 1, 1);
+    canvas.remove();
   }
 
-  function initializeShapes() {
-    window.$fxhashFeatures = {
-      "Shapes": numShapes,
-      "Colors": colors,
-      "Clicks": "Clk to F5 Dbl Clk to DL"
-    };
+  // --- Helper Function: Get Vertex Offset with Wavy, Random Oscillators ---
+  function getVertexOffset(depth, index) {
+    if (depth === 0) return { dx: 0, dy: 0 };
 
-    shapes.length = 0;
-    const maxRadius = Math.min(canvas.width, canvas.height) / 2;
+    let now = performance.now();
+    if (now < animationStartTime) return { dx: 0, dy: 0 };
 
-    let attempts = 0;
-    while (shapes.length < numShapes && attempts < 2000) {
-      const radius = gRD() * (maxRadius / 2) + maxRadius / 2;
+    let elapsed = now - animationStartTime;
+    let t = (elapsed % cycleDuration) / cycleDuration;
+    let windowFunc = Math.pow(Math.sin(Math.PI * t), 2);
 
-      const newShape = {
-        x: gRD() * (canvas.width - radius * 2) + radius,
-        y: gRD() * (canvas.height - radius * 2) + radius,
-        radius,
-        frequency: gRD() * 21 + 1,
-        phase: gRD() * Math.PI * 2,
-        lineDensity: gRD() * 75 + 35,
-        color: colors[Math.floor(gRD() * colors.length)],
-        flipPhase: 0,
-        flipSpeed: gRD() * 0.01 + 0.025,
-        flipAxis: gRD() < 0.5 ? 'x' : 'y',
-        flipTarget: (gRD() < 0.75 ? 1 : (gRD() * 0.5 + 0.25)) * Math.PI * 2,
-        rotationAxis: normalizeVector({ x: gRD() - 0.5, y: gRD() - 0.5 })
+    let key = depth + "_" + index;
+    let currentCycle = Math.floor(elapsed / cycleDuration);
+    if (!vertexTargets[key] || vertexTargets[key].cycle < currentCycle) {
+      vertexTargets[key] = {
+        cycle: currentCycle,
+        ax: minRandomOffset + Math.random() * (maxRandomOffset - minRandomOffset),
+        ay: minRandomOffset + Math.random() * (maxRandomOffset - minRandomOffset),
+        fx: 1 + Math.random() * 4,
+        fy: 1 + Math.random() * 4,
+        phaseX: Math.random() * 4 * Math.PI,
+        phaseY: Math.random() * 4 * Math.PI
       };
+    }
+    let params = vertexTargets[key];
+    let factorX = windowFunc * Math.sin(2 * Math.PI * params.fx * t + params.phaseX);
+    let factorY = windowFunc * Math.sin(2 * Math.PI * params.fy * t + params.phaseY);
 
-      let valid = true;
-      for (let shape of shapes) {
-        const dx = shape.x - newShape.x;
-        const dy = shape.y - newShape.y;
-        const dist = Math.hypot(dx, dy);
-        const minDist = shape.radius + newShape.radius;
-        const maxOverlap = Math.min(shape.radius, newShape.radius) * maxOverlapRatio;
-        if (dist < (minDist - maxOverlap)) {
-          valid = false;
-          break;
+    return { dx: params.ax * factorX, dy: params.ay * factorY };
+  }
+
+  // --- Fractal Class for Intricate, Symmetrical 3D Designs ---
+  class SymmetricFractal {
+    constructor(width, height, gradient) {
+      this.width = width;
+      this.height = height;
+      this.initialRadius = Math.min(width, height) * initialRadiusFactor;
+      this.maxDepth = globalMaxDepth;
+      this.sides = sides;
+      this.rotationAngle = globalRotationAngle;
+      this.scaleFactor = globalScaleFactor;
+      this.gradient = gradient;
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.width / 2, this.height / 2);
+      for (let i = 0; i < this.sides; i++) {
+        ctx.save();
+        ctx.rotate(i * 2 * Math.PI / this.sides);
+        this.drawRecursiveShape(ctx, this.initialRadius, 0);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    drawRecursiveShape(ctx, radius, depth) {
+      if (depth > this.maxDepth) return;
+
+      if (basePatternType === 1) {
+        ctx.beginPath();
+        for (let i = 0; i < this.sides; i++) {
+          let angle = i * 2 * Math.PI / this.sides;
+          let x = radius * Math.cos(angle);
+          let y = radius * Math.sin(angle);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.closePath();
+      } else if (basePatternType === 2) {
+        let points = [];
+        for (let i = 0; i < this.sides; i++) {
+          let angle = i * 2 * Math.PI / this.sides;
+          let x = radius * Math.cos(angle);
+          let y = radius * Math.sin(angle);
+          points.push({ x: x, y: y });
+        }
+        ctx.beginPath();
+        if (points.length > 0) {
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 0; i < points.length; i++) {
+            let current = points[i];
+            let next = points[(i + 1) % points.length];
+            let cx = (current.x + next.x) / 2;
+            let cy = (current.y + next.y) / 2;
+            ctx.quadraticCurveTo(current.x, current.y, cx, cy);
+          }
+          ctx.closePath();
         }
       }
 
-      if (valid) shapes.push(newShape);
-      attempts++;
-    }
-
-    if (attempts >= 1000) {
-      console.warn("Reached max attempts placing shapes without excessive overlap");
-    }
-
-  }
-
-
-  function updateShapes() {
-    for (let shape of shapes) {
-      // Drastic wave frequency + phase jumps = wiggly chaos
-      shape.frequency += (gRD() - 0.5) * 0.25 * 2;
-      shape.phase += (gRD() - 0.5) * 0.5 * 2;
-
-      // Major positional jitter — this is the "teleportiness"
-      const jitterX = (gRD() - 0.5) * 64; // ⬆️ was 4
-      const jitterY = (gRD() - 0.5) * 64; // ⬆️ was 4
-      shape.x = Math.max(shape.radius, Math.min(canvas.width - shape.radius, shape.x + jitterX));
-      shape.y = Math.max(shape.radius, Math.min(canvas.height - shape.radius, shape.y + jitterY));
-
-      // --- Glitch hops: random small offset at a defined probability ---
-      if (Math.random() < GLITCH_HOP_PROBABILITY) {
-        const glitchX = (fxrand() - 0.5) * GLITCH_HOP_MAGNITUDE;
-        const glitchY = (fxrand() - 0.5) * GLITCH_HOP_MAGNITUDE;
-        shape.x += glitchX;
-        shape.y += glitchY;
-      }
-
-      // Faster flips
-      shape.flipPhase += shape.flipSpeed * (gRD() * 1.5 + 0.5); // randomizes rotation tick rate
-      if (shape.flipPhase >= shape.flipTarget) {
-        shape.flipPhase = 0;
-        shape.flipAxis = gRD() < 0.5 ? 'x' : 'y';
-        shape.flipSpeed = gRD() * 0.02 + 0.01; // ⬆️ faster flip speed
-        shape.flipTarget = (gRD() < 0.45 ? 1 : (gRD() * 0.5 + 0.25)) * Math.PI * 2;
-      }
-    }
-  }
-
-
-  const noiseSeed = [];
-  for (let i = 0; i < 256; i++) noiseSeed[i] = gRD();
-
-  function noise(x) {
-    const i = Math.floor(x) % 256;
-    const f = x - Math.floor(x);
-    const u = f * f * (3 - 2 * f);
-    return lerp(noiseSeed[i], noiseSeed[(i + 1) % 256], u);
-  }
-
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-
-  function drawShape(shape) {
-    const { x, y, radius, frequency, phase, lineDensity, color, flipPhase, rotationAxis } = shape;
-
-    ctx.save(); // Save before transforming
-
-    // Move origin to shape center
-    ctx.translate(x, y);
-
-    // Apply simulated 3D rotation around random axis
-    const scale = Math.cos(flipPhase);      // Controls "thickness"
-    const skew = Math.sin(flipPhase) * 2; // Adds perspective distortion
-    const a = 1 + rotationAxis.x * skew;
-    const b = rotationAxis.y * skew;
-    const c = rotationAxis.x * skew;
-    const d = 1 + rotationAxis.y * skew;
-    ctx.transform(a * scale, b, c, d * scale, 0, 0); // Apply from centered origin
-
-    // --- Draw filled wavy shape ---
-    ctx.beginPath();
-    for (let angle = 0; angle <= Math.PI * 2; angle += 0.00025) {
-      const wave = Math.sin(angle * frequency + phase + gRD() * 0.15) * (18 + gRD() * 4);
-      const r = radius + wave * 0.5 + gRD() * 2;
-      const posX = Math.cos(angle) * r;
-      const posY = Math.sin(angle) * r;
-      if (angle === 0) ctx.moveTo(posX, posY);
-      else ctx.lineTo(posX, posY);
-    }
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.globalAlpha = .75;
-    ctx.fill();
-
-    // --- Draw inner lines ---
-    ctx.globalAlpha = 1.0;
-    for (let i = 0; i < lineDensity; i++) {
-      ctx.beginPath();
-      const linePhase = (i / lineDensity) * Math.PI * 2;
-
-      for (let angle = 0; angle <= Math.PI * 2; angle += 0.01) {
-        const n = noise(angle * 0.5 + i * 0.1 + time * 0.2); // smooth organic wave
-        const wave = Math.sin(angle * frequency + phase + linePhase) * 75 * n;
-        const r = radius + wave * 0.9;
-
-        const progress = i / lineDensity;
-        // Puffiness factor based on flip thickness
-        const puff = .5 - Math.abs(Math.cos(flipPhase)); // 0 at side view, 1 at flat view
-        const puffCurve = Math.sin(progress * Math.PI); // 0 at edges, 1 in middle
-
-        const puffedRadius = r * (progress + puff * 1 * puffCurve);
-
-        const posX = Math.cos(angle) * puffedRadius;
-        const posY = Math.sin(angle) * puffedRadius;
-
-
-        if (angle === 0) ctx.moveTo(posX, posY);
-        else ctx.lineTo(posX, posY);
-      }
-
-      // Simulated shading
-      const shade = Math.floor(200 + noise(i * 0.5 + time * 0.1) * 55);
-      ctx.strokeStyle = 'hsl('+ 360*gRD() +',100%,50%)';
+      ctx.strokeStyle = this.gradient;
       ctx.stroke();
+      ctx.fillStyle = this.gradient;
+      ctx.globalAlpha = 0.5;
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+
+      for (let i = 0; i < this.sides; i++) {
+        let angle = i * 16 * Math.PI / this.sides;
+        let x = radius * Math.cos(angle);
+        let y = radius * Math.sin(angle);
+        let offset = getVertexOffset(depth, i);
+        ctx.save();
+        ctx.translate(x + offset.dx, y + offset.dy);
+        ctx.rotate(this.rotationAngle);
+        let newRadius = radius * this.scaleFactor;
+        this.drawRecursiveShape(ctx, newRadius, depth + 1);
+        ctx.restore();
+      }
     }
-
-
-    ctx.restore(); // Reset everything
   }
 
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateShapes();
-    for (let shape of shapes) {
-      drawShape(shape);
+  // --- Canvas Setup, Drawing, and Animation ---
+  window.addEventListener("load", function() {
+    const canvas = document.getElementById("canvas1");
+    const ctx = canvas.getContext("2d");
+    canvas.width = 4096;
+    canvas.height = 4096;
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+
+    // Create a secondary canvas (dcan) for the fractal design and trails.
+    const dcan = document.createElement("canvas");
+    dcan.width = canvas.width;
+    dcan.height = canvas.height;
+    const dctx = dcan.getContext("2d");
+    // Ensure dcan starts transparent.
+    dctx.clearRect(0, 0, dcan.width, dcan.height);
+    // Set drawing styles for the main canvas.
+    dctx.lineWidth = 50;
+    dctx.lineCap = "miter";
+    dctx.shadowColor = "hsl(3 100% 50%)";
+    dctx.shadowOffsetY = 10;
+    dctx.shadowOffsetX = 5;
+    //dctx.shadowBlur = 10;
+
+    // Draw and store the static background on the main canvas.
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const bgImage = new Image();
+    bgImage.src = canvas.toDataURL();
+
+
+
+
+    // Create your gradient.
+    var gradient = ctx.createLinearGradient(lg1, lg2, lg3, lg4);
+    gradient.addColorStop(0.0, c1);
+    gradient.addColorStop(0.25, c2);
+    gradient.addColorStop(0.5, c3);
+    gradient.addColorStop(0.75, c4);  // This will be your red value
+    gradient.addColorStop(1.0, c5);
+
+
+    const fractal = new SymmetricFractal(canvas.width, canvas.height, gradient);
+
+    // Initialize animation timing.
+    animationStartTime = performance.now();
+    freezeTimestamp = animationStartTime + freezeRangeMin + Math.random() * (freezeRangeMax - freezeRangeMin);
+
+    // Animation loop:
+    function animate() {
+      // On dcan, fade previous frames without adding color by using "destination-out".
+      dctx.save();
+      dctx.globalCompositeOperation = "destination-out";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.09)";
+      dctx.fillRect(0, 0, dcan.width, dcan.height);
+      dctx.restore();
+      // Draw the fractal design on dcan.
+      fractal.draw(dctx);
+
+      // Composite: clear main canvas, draw stored background, then composite dcan.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(dcan, 0, 0, canvas.width, canvas.height);
+
+      if (performance.now() < freezeTimestamp) {
+        requestAnimationFrame(animate);
+      }
     }
-    // Adjust the time increment based on device type:
-    const adjustedIncrement = TIME_INCREMENT * (isAndroid ? 0.25 : 1);
-    time += adjustedIncrement;
     requestAnimationFrame(animate);
-  }
-  initializeShapes();
-  animate();
 
-  window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    initializeShapes();
-  });
-
-  let timer;
-  let lastTap = 0;
-  const DOUBLE_TAP_DELAY = 300; // milliseconds
-
-  // For mouse events on desktop, Android, etc.
-  canvas.addEventListener("click", e => {
-    if (e.detail === 1) {
-      timer = setTimeout(() => location.reload(), DOUBLE_TAP_DELAY);
-    }
-  });
-
-  canvas.addEventListener("dblclick", () => {
-    clearTimeout(timer);
-    showModal();
-  });
-
-  // For iOS (and other touch devices) double-tap detection
-  canvas.addEventListener("touchend", function(e) {
-    const currentTime = new Date().getTime();
-    const tapInterval = currentTime - lastTap;
-    if (tapInterval < DOUBLE_TAP_DELAY && tapInterval > 0) {
-      // Double-tap detected; prevent the single-tap action
-      e.preventDefault(); // prevents zooming and synthetic click events
+    // --- Click and Double-Click Functionalities ---
+    let timer;
+    canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+    canvas.addEventListener("dblclick", () => {
       clearTimeout(timer);
       showModal();
-    } else {
-      // Single tap: schedule reload action if no double-tap follows
-      timer = setTimeout(() => location.reload(), DOUBLE_TAP_DELAY);
+    });
+
+    window.addEventListener("pagehide", t => {
+      var canvases = document.getElementsByTagName("canvas");
+      var canvasesArray = Array.prototype.slice.call(canvases);
+      canvasesArray.forEach(releaseCanvas);
+    });
+
+    function showModal() {
+      const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      if (modal) {
+        modal.style.background = "#000";
+        modal.style.boxShadow = `0 0 10px ${c3}`;
+      }
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.textContent = opt;
+        btn.onclick = () => {
+          document.body.removeChild(modal);
+          scaleCanvas(parseInt(opt), opt.includes('t'));
+        };
+        modal.appendChild(btn);
+        if (btn) {
+          btn.style.background = "#000";
+          btn.style.color = c3;
+          btn.style.boxShadow = `0 0 10px ${c3}`;
+        }
+      });
+      document.body.appendChild(modal);
     }
-    lastTap = currentTime;
+
+    // --- scaleCanvas Function ---
+    function scaleCanvas(multiplier, transparent) {
+      const originalAspectRatio = canvas.width / canvas.height;
+      const upscaleHeight = 512 * multiplier;
+      const upscaleWidth = upscaleHeight * originalAspectRatio;
+
+      const offscreenCanvas = document.createElement('canvas');
+      const offscreenCtx = offscreenCanvas.getContext('2d');
+      offscreenCanvas.width = upscaleWidth;
+      offscreenCanvas.height = upscaleHeight;
+
+      if (!transparent) {
+        offscreenCtx.fillStyle = '#000000';
+        offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
+        // Draw the composite main canvas (background + dcan) onto the offscreen canvas.
+        offscreenCtx.drawImage(canvas, 0, 0, upscaleWidth, upscaleHeight);
+      } else {
+        offscreenCtx.clearRect(0, 0, upscaleWidth, upscaleHeight);
+        // Draw only dcan (the fractal design with trails, with transparent background) onto the offscreen canvas.
+        offscreenCtx.drawImage(dcan, 0, 0, upscaleWidth, upscaleHeight);
+      }
+
+      const link = document.createElement('a');
+      link.download = `Refract_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+      link.href = offscreenCanvas.toDataURL('image/png');
+      link.click();
+    }
   });
 
 
- function showModal() {
-             const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
-             const modal = document.createElement('div');
-             modal.className = 'modal';
-             if (modal) {
-               modal.style.background = "#000";
-               modal.style.boxShadow = `0 0 10px hsl(310, 100%, 50%)`;
-             }
-             options.forEach(opt => {
-                 const btn = document.createElement('button');
-                 btn.textContent = opt;
-                 btn.onclick = () => {
-                     document.body.removeChild(modal);
-                     scaleCanvas(parseInt(opt), opt.includes('t'));
-                 };
-                 modal.appendChild(btn);
-                 // Apply the styles dynamically
-                 if (btn) {
-                   btn.style.background = "#000";
-                   btn.style.color = 'hsl(310, 100%, 50%)';
-                   btn.style.boxShadow = `0 0 10px hsl(310, 100%, 50%)`;
-                 }
-               });
-             document.body.appendChild(modal);
-         }
-
-         function scaleCanvas(multiplier, transparent) {
-    // Calculate the target dimensions while preserving aspect ratio
-    const originalAspectRatio = canvas.width / canvas.height;
-    const upscaleHeight = 512 * multiplier;
-    const upscaleWidth = upscaleHeight * originalAspectRatio;
-
-    // Create the offscreen canvas
-    const offscreenCanvas = document.createElement('canvas');
-    const offscreenCtx = offscreenCanvas.getContext('2d');
-    offscreenCanvas.width = upscaleWidth;
-    offscreenCanvas.height = upscaleHeight;
-
-    // Handle background
-    if (!transparent) {
-        offscreenCtx.fillStyle = '#000000'; // Black background
-        offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
-    }
-
-    // Calculate scaling factors
-    const scale = upscaleHeight / canvas.height;
-    const scaledWidth = canvas.width * scale;
-    const scaledHeight = canvas.height * scale;
-    const offsetX = (upscaleWidth - scaledWidth) / 2;
-    const offsetY = (upscaleHeight - scaledHeight) / 2;
-
-    // Draw the original canvas onto the offscreen canvas
-    offscreenCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
-
-    // Save the image
-    const link = document.createElement('a');
-    link.download = `gtfo_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
-    link.href = offscreenCanvas.toDataURL('image/png');
-    link.click();
-}
-
-function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
-</script>
-</body>
-</html>
+  </script>
+</body></html>
