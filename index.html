@@ -54,12 +54,12 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       freezeRangeMin = 4000;
       freezeRangeMax = 5000;
   } else if (isIOS) {
-      freezeRangeMin = 2000;
-      freezeRangeMax = 3000;
+      freezeRangeMin = 3000;
+      freezeRangeMax = 4000;
 
   } else {
-      freezeRangeMin = 4000;
-      freezeRangeMax = 5000;
+      freezeRangeMin = 4500;
+      freezeRangeMax = 5500;
   }
   var freezeTimestamp = null;
   // Animation cycle duration (in milliseconds)
@@ -244,7 +244,15 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       // On dcan, fade previous frames without adding color by using "destination-out".
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
+      var cycleDuration = 10000; // One complete drift cycle
+      if (isAndroid) {
+      dctx.fillStyle = "rgba(0, 0, 0, 0.0075)";
+      } else if (isIOS) {
+      dctx.fillStyle = "rgba(0, 0, 0, 0.03)";
+      } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      }
+
       dctx.fillRect(0, 0, dcan.width, dcan.height);
       dctx.restore();
       // Draw the fractal design on dcan.
