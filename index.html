@@ -29,6 +29,9 @@
   var lg2 = '700';
   var lg3 = '800';
   var lg4 = '300';
+var isAndroid = /Android/i.test(navigator.userAgent);
+var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 
   // --- Global Animation & Fractal Parameters ---
   var initialRadiusFactor = 0.145;  // Global multiplier for the initial radius
@@ -41,17 +44,27 @@
 
   // Random offset settings for animated inner shapes (in pixels)
   var minRandomOffset = 0;
-  var maxRandomOffset = 1250;
-
-  // Animation cycle duration (in milliseconds)
-  var cycleDuration = 15000; // One complete drift cycle
-  var animationStartTime = null;  // Will be set on page load
-  var vertexTargets = {};         // Store per-vertex oscillator parameters and cycle info
+  var maxRandomOffset = 1000;
 
   // --- Freeze Range Settings ---
-  var freezeRangeMin = 5000;
-  var freezeRangeMax = 8000;
+  var freezeRangeMin;
+  var freezeRangeMax;
+  var cycleDuration = 10000; // One complete drift cycle
+  if (isAndroid) {
+      freezeRangeMin = 4000;
+      freezeRangeMax = 5000;
+  } else if (isIOS) {
+      freezeRangeMin = 2000;
+      freezeRangeMax = 3000;
+
+  } else {
+      freezeRangeMin = 4000;
+      freezeRangeMax = 5000;
+  }
   var freezeTimestamp = null;
+  // Animation cycle duration (in milliseconds)
+  var animationStartTime = null;  // Will be set on page load
+  var vertexTargets = {};         // Store per-vertex oscillator parameters and cycle info
 
   // --- Utility: Release Canvas ---
   function releaseCanvas(canvas) {
@@ -200,7 +213,7 @@
     dctx.shadowColor = "hsl(3 100% 50%)";
     dctx.shadowOffsetY = 10;
     dctx.shadowOffsetX = 5;
-    //dctx.shadowBlur = 10;
+    //dctx.shadowBlur = 50;
 
     // Draw and store the static background on the main canvas.
     ctx.fillStyle = "#000000";
@@ -231,7 +244,7 @@
       // On dcan, fade previous frames without adding color by using "destination-out".
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
-      dctx.fillStyle = "rgba(0, 0, 0, 0.09)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       dctx.fillRect(0, 0, dcan.width, dcan.height);
       dctx.restore();
       // Draw the fractal design on dcan.
