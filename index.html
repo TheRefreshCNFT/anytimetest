@@ -51,8 +51,8 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var freezeRangeMax;
   var cycleDuration = 10000; // One complete drift cycle
   if (isAndroid) {
-    freezeRangeMin = 5000;
-    freezeRangeMax = 5500;
+    freezeRangeMin = 4500;
+    freezeRangeMax = 5000;
   } else if (isIOS) {
       freezeRangeMin = 3500;
       freezeRangeMax = 4000;
@@ -172,9 +172,8 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       ctx.strokeStyle = this.gradient;
       ctx.stroke();
       ctx.fillStyle = this.gradient;
-      ctx.globalAlpha = 0.5;
       ctx.fill();
-      ctx.globalAlpha = 1.0;
+
 
       for (let i = 0; i < this.sides; i++) {
         let angle = i * 16 * Math.PI / this.sides;
@@ -210,7 +209,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     // Set drawing styles for the main canvas.
     dctx.lineWidth = 50;
     dctx.lineCap = "miter";
-    dctx.shadowColor = "hsl(3 100% 50%)";
+    dctx.shadowColor = "hsl(3,100%,50%)";
     dctx.shadowOffsetY = 10;
     dctx.shadowOffsetX = 5;
     //dctx.shadowBlur = 50;
@@ -244,11 +243,10 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       // On dcan, fade previous frames without adding color by using "destination-out".
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
-      var cycleDuration = 10000; // One complete drift cycle
       if (isAndroid) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.001)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.075)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       }
