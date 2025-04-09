@@ -213,9 +213,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     dctx.lineWidth = 40;
     dctx.lineCap = "miter";
     dctx.shadowColor = "hsl(3,100%,50%)";
-    dctx.shadowOffsetY = 7;
+    dctx.shadowOffsetY = 6;
     dctx.shadowOffsetX = 3;
-    dctx.shadowBlur = 30;
+    dctx.shadowBlur = 20;
 
     // Draw and store the static background on the main canvas.
     ctx.fillStyle = "#000000";
@@ -255,9 +255,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.09)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.09)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
