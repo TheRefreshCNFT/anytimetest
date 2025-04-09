@@ -25,7 +25,7 @@
   var c4 = 'hsl(0,100%,0%)';
   var c5 = 'hsl(0,100%,0%)';
   var st = 'hsl(0,100%,0%)';
-  var lg1 = 100;
+  var lg1 = 500;
   var lg2 = 700;
   var lg3 = 800;
   var lg4 = 300;
@@ -223,11 +223,11 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const bgImage = new Image();
     bgImage.src = canvas.toDataURL();
 
-    const mr = Math.random();
+
+
 
     // Create your gradient.
-    var gradient = ctx.createLinearGradient((mr * 2) * lg1, (mr * 2) * lg2, (mr * 2) * lg3, (mr * 2) * lg4);
-
+    var gradient = ctx.createLinearGradient(lg1, lg2, lg3, lg4);
     gradient.addColorStop(0.0, c1);
     gradient.addColorStop(0.25, c2);
     gradient.addColorStop(0.5, c3);
@@ -253,6 +253,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
+
       dctx.fillRect(0, 0, dcan.width, dcan.height);
       dctx.restore();
       // Draw the fractal design on dcan.
