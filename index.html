@@ -44,18 +44,18 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // Random offset settings for animated inner shapes (in pixels)
   var minRandomOffset = 0;
-  var maxRandomOffset = 1000;
+  var maxRandomOffset = 1100;
 
   // --- Freeze Range Settings ---
   var freezeRangeMin;
   var freezeRangeMax;
   var cycleDuration;
   if (isAndroid) {
-    cycleDuration = 9000;
+    cycleDuration = 9200;
     freezeRangeMin = 4500;
     freezeRangeMax = 5000;
   } else if (isIOS) {
-      cycleDuration = 15000;
+      cycleDuration = 13000;
       freezeRangeMin = 4500;
       freezeRangeMax = 5000;
 
@@ -249,7 +249,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isAndroid) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.0115)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.21)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.2)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       }
