@@ -59,7 +59,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   } else {
       freezeRangeMin = 4500;
-      freezeRangeMax = 5500;
+      freezeRangeMax = 5000;
   }
   var freezeTimestamp = null;
   // Animation cycle duration (in milliseconds)
@@ -246,7 +246,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isAndroid) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.001)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.11)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.15)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       }
