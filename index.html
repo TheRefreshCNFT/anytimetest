@@ -51,16 +51,16 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var freezeRangeMax;
   var cycleDuration;
   if (isAndroid) {
-      cycleDuration = 7000;
-      freezeRangeMin = 3500;
-      freezeRangeMax = 3500;
+      cycleDuration = 5000;
+      freezeRangeMin = 3000;
+      freezeRangeMax = 3000;
     } else if (isIOS) {
-        cycleDuration = 8500;
+        cycleDuration = 5000;
         freezeRangeMin = 3500;
         freezeRangeMax = 3500;
 
     } else {
-        cycleDuration = 10000;
+        cycleDuration = 8000;
         freezeRangeMin = 4500;
         freezeRangeMax = 4500;
     }
