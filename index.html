@@ -49,15 +49,18 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   // --- Freeze Range Settings ---
   var freezeRangeMin;
   var freezeRangeMax;
-  var cycleDuration = 10000; // One complete drift cycle
+  var cycleDuration;
   if (isAndroid) {
+    cycleDuration = 8000;
     freezeRangeMin = 4500;
     freezeRangeMax = 5000;
   } else if (isIOS) {
+      cycleDuration = 12000;
       freezeRangeMin = 4500;
       freezeRangeMax = 5000;
 
   } else {
+      cycleDuration = 10000;
       freezeRangeMin = 4500;
       freezeRangeMax = 5000;
   }
