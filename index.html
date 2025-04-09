@@ -52,12 +52,12 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var cycleDuration;
   if (isAndroid) {
       cycleDuration = 5000;
-      freezeRangeMin = 3000;
-      freezeRangeMax = 3000;
+      freezeRangeMin = 5000;
+      freezeRangeMax = 5000;
     } else if (isIOS) {
         cycleDuration = 4000;
-        freezeRangeMin = 3000;
-        freezeRangeMax = 3000;
+        freezeRangeMin = 4000;
+        freezeRangeMax = 4000;
 
     } else {
         cycleDuration = 20000;
@@ -255,9 +255,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
