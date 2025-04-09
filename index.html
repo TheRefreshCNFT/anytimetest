@@ -37,7 +37,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var initialRadiusFactor = 0.12;  // Global multiplier for the initial radius
   var globalMaxDepth = 2;         // Recursion depth
   var globalRotationAngle = Math.PI / 6; // Extra rotation for inner shapes
-  var globalScaleFactor = 0.37;    // Scale reduction at each recursion step
+  var globalScaleFactor = 0.4;    // Scale reduction at each recursion step
 
   // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
   var basePatternType = 1;
@@ -56,8 +56,8 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       freezeRangeMax = 2800;
     } else if (isIOS) {
         cycleDuration = 5000;
-        freezeRangeMin = 3500;
-        freezeRangeMax = 3500;
+        freezeRangeMin = 2000;
+        freezeRangeMax = 2000;
 
     } else {
         cycleDuration = 8000;
@@ -210,11 +210,11 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     // Ensure dcan starts transparent.
     dctx.clearRect(0, 0, dcan.width, dcan.height);
     // Set drawing styles for the main canvas.
-    dctx.lineWidth = 50;
+    dctx.lineWidth = 40;
     dctx.lineCap = "miter";
     dctx.shadowColor = "hsl(3,100%,50%)";
-    dctx.shadowOffsetY = 10;
-    dctx.shadowOffsetX = 5;
+    dctx.shadowOffsetY = 7;
+    dctx.shadowOffsetX = 3;
     //dctx.shadowBlur = 50;
 
     // Draw and store the static background on the main canvas.
