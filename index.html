@@ -244,9 +244,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.01)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.0125)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.225)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.22)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       }
