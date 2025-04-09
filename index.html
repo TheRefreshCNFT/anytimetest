@@ -54,8 +54,8 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     freezeRangeMin = 4500;
     freezeRangeMax = 5000;
   } else if (isIOS) {
-      freezeRangeMin = 3500;
-      freezeRangeMax = 4000;
+      freezeRangeMin = 4000;
+      freezeRangeMax = 4500;
 
   } else {
       freezeRangeMin = 4500;
@@ -244,7 +244,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.0025)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.003)";
       } else if (isIOS) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.225)";
       } else {
