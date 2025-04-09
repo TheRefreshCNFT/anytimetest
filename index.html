@@ -53,16 +53,16 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isAndroid) {
       cycleDuration = 7500;
       freezeRangeMin = 4500;
-      freezeRangeMax = 5000;
+      freezeRangeMax = 4500;
     } else if (isIOS) {
         cycleDuration = 8500;
-        freezeRangeMin = 6000;
-        freezeRangeMax = 6200;
+        freezeRangeMin = 4000;
+        freezeRangeMax = 4000;
 
     } else {
         cycleDuration = 10000;
         freezeRangeMin = 4500;
-        freezeRangeMax = 5000;
+        freezeRangeMax = 4500;
     }
   var freezeTimestamp = null;
   // Animation cycle duration (in milliseconds)
