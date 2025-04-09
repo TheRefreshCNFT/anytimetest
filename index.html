@@ -34,7 +34,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 
   // --- Global Animation & Fractal Parameters ---
-  var initialRadiusFactor = 0.145;  // Global multiplier for the initial radius
+  var initialRadiusFactor = 0.12;  // Global multiplier for the initial radius
   var globalMaxDepth = 2;         // Recursion depth
   var globalRotationAngle = Math.PI / 6; // Extra rotation for inner shapes
   var globalScaleFactor = 0.37;    // Scale reduction at each recursion step
@@ -55,7 +55,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       freezeRangeMin = 2800;
       freezeRangeMax = 2800;
     } else if (isIOS) {
-        cycleDuration = 5500;
+        cycleDuration = 5000;
         freezeRangeMin = 3500;
         freezeRangeMax = 3500;
 
@@ -257,7 +257,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isAndroid) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.016)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.095)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.7)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
