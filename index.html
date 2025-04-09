@@ -208,7 +208,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     dcan.height = canvas.height;
     const dctx = dcan.getContext("2d");
     // Ensure dcan starts transparent.
-    //dctx.clearRect(0, 0, dcan.width, dcan.height);
+    dctx.clearRect(0, 0, dcan.width, dcan.height);
     // Set drawing styles for the main canvas.
     dctx.lineWidth = 50;
     dctx.lineCap = "miter";
