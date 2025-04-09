@@ -243,7 +243,15 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     // Animation loop:
     function animate() {
-      // On dcan, fade previous frames without adding color by using "destination-out".
+        // Check for freeze immediately.
+        if (performance.now() >= freezeTimestamp) {
+            // Optionally, draw the final frame without performing the fade.
+            // For example, just composite the last stored static background:
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(dcan, 0, 0, canvas.width, canvas.height);
+            return;  // Stop the animation loop.
+        }
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
