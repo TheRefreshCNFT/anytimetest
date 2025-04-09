@@ -37,10 +37,10 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var initialRadiusFactor = 0.12;  // Global multiplier for the initial radius
   var globalMaxDepth = 2;         // Recursion depth
   var globalRotationAngle = Math.PI / 6; // Extra rotation for inner shapes
-  var globalScaleFactor = 0.4;    // Scale reduction at each recursion step
+  var globalScaleFactor = 0.3;    // Scale reduction at each recursion step
 
   // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
-  var basePatternType = 2;
+  var basePatternType = 1;
 
   // Random offset settings for animated inner shapes (in pixels)
   var minRandomOffset = 0;
@@ -255,9 +255,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.07)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.08)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.07)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.08)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
