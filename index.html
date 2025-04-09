@@ -52,17 +52,17 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var cycleDuration;
   if (isAndroid) {
       cycleDuration = 5000;
-      freezeRangeMin = 2700;
-      freezeRangeMax = 2700;
+      freezeRangeMin = 3000;
+      freezeRangeMax = 3000;
     } else if (isIOS) {
         cycleDuration = 4000;
         freezeRangeMin = 3000;
         freezeRangeMax = 3000;
 
     } else {
-        cycleDuration = 8000;
-        freezeRangeMin = 4500;
-        freezeRangeMax = 4500;
+        cycleDuration = 20000;
+        freezeRangeMin = 12000;
+        freezeRangeMax = 12000;
     }
   var freezeTimestamp = null;
   // Animation cycle duration (in milliseconds)
@@ -215,7 +215,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     dctx.shadowColor = "hsl(3,100%,50%)";
     dctx.shadowOffsetY = 7;
     dctx.shadowOffsetX = 3;
-    //dctx.shadowBlur = 50;
+    dctx.shadowBlur = 30;
 
     // Draw and store the static background on the main canvas.
     ctx.fillStyle = "#000000";
@@ -257,7 +257,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isAndroid) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.016)";
       } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.1)";
       } else {
       dctx.fillStyle = "rgba(0, 0, 0, 0.025)";
       }
