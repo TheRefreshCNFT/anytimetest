@@ -36,8 +36,8 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   // --- Global Animation & Fractal Parameters ---
   var initialRadiusFactor = 0.12;  // Global multiplier for the initial radius
   var globalMaxDepth = 2;         // Recursion depth
-  var globalRotationAngle = Math.PI / 6; // Extra rotation for inner shapes
-  var globalScaleFactor = 0.275;    // Scale reduction at each recursion step
+  var globalRotationAngle = Math.PI / 3; // Extra rotation for inner shapes
+  var globalScaleFactor = 0.3;    // Scale reduction at each recursion step
 
   // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
   var basePatternType = 1;
@@ -52,17 +52,17 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var cycleDuration;
   if (isAndroid) {
       cycleDuration = 20000;
-      freezeRangeMin = 11000;
-      freezeRangeMax = 11000;
+      freezeRangeMin = 6000;
+      freezeRangeMax = 6000;
     } else if (isIOS) {
         cycleDuration = 20000;
-        freezeRangeMin = 11000;
-        freezeRangeMax = 11000;
+        freezeRangeMin = 6000;
+        freezeRangeMax = 6000;
 
     } else {
         cycleDuration = 20000;
-        freezeRangeMin = 12000;
-        freezeRangeMax = 12000;
+        freezeRangeMin = 6000;
+        freezeRangeMax = 6000;
     }
   var freezeTimestamp = null;
   // Animation cycle duration (in milliseconds)
