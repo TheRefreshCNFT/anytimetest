@@ -256,11 +256,11 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.save();
       dctx.globalCompositeOperation = "destination-out";
       if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.065)";
-      } else if (isIOS) {
       dctx.fillStyle = "rgba(0, 0, 0, 0.07)";
+      } else if (isIOS) {
+      dctx.fillStyle = "rgba(0, 0, 0, 0.075)";
       } else {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      dctx.fillStyle = "rgba(0, 0, 0, 0.065)";
       }
 
       dctx.fillRect(0, 0, dcan.width, dcan.height);
