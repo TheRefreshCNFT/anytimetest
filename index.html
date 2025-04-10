@@ -265,7 +265,10 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.fillRect(0, 0, dcan.width, dcan.height);
       dctx.restore();
       // Draw the fractal design on dcan.
+      
+      dctx.globalAlpha = .7;
       fractal.draw(dctx);
+      dctx.globalAlpha = 1;
 
       // Composite: clear main canvas, draw stored background, then composite dcan.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
