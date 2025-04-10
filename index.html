@@ -43,19 +43,19 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   var basePatternType = 1;
 
   // Random offset settings for animated inner shapes (in pixels)
-  var minRandomOffset = 1150;
-  var maxRandomOffset = 1150;
+  var minRandomOffset = 1100;
+  var maxRandomOffset = 1100;
 
   // --- Freeze Range Settings ---
   var freezeRangeMin;
   var freezeRangeMax;
   var cycleDuration;
   if (isAndroid) {
-      cycleDuration = 18000;
+      cycleDuration = 16000;
       freezeRangeMin = 8200;
       freezeRangeMax = 8200;
     } else if (isIOS) {
-        cycleDuration = 18000;
+        cycleDuration = 16000;
         freezeRangeMin = 7000;
         freezeRangeMax = 7000;
 
