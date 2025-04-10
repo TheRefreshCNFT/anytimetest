@@ -175,8 +175,9 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       ctx.strokeStyle = this.gradient;
       ctx.stroke();
       ctx.fillStyle = this.gradient;
+      ctx.globalAlpha = 0.5;
       ctx.fill();
-
+      ctx.globalAlpha = 1.0;
 
       for (let i = 0; i < this.sides; i++) {
         let angle = i * 16 * Math.PI / this.sides;
@@ -266,9 +267,7 @@ var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       dctx.restore();
       // Draw the fractal design on dcan.
       
-      dctx.globalAlpha = .7;
       fractal.draw(dctx);
-      dctx.globalAlpha = 1;
 
       // Composite: clear main canvas, draw stored background, then composite dcan.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
