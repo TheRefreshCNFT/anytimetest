@@ -1,353 +1,347 @@
-<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body,html{padding:0!important;margin:0!important;margin-bottom:0;padding-bottom:0}*{padding:0;margin:0}body{background-color:#000;overflow:hidden}.img{position:absolute;object-fit:contain;display:none}#canvas1{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-
-
-  .modal {
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: #555; padding: 20px; border-radius: 10px;
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-        box-shadow: 0 0 20px gold; z-index: 10;
-    }
-    .modal button {
-        padding: 10px; background: #000; color: gold; border: none;
-        font-weight: bold; cursor: pointer; box-shadow: 0 0 10px gold;
-    }
-#mainCanvas{-webkit-user-select:none;-ms-user-select:none;user-select:none}
-</style>
-</head>
-<body>
-  <canvas id="canvas1" style="object-fit:contain;position:absolute"></canvas>
-
-  <script>
-  var sides = 6;
-  var c1 = 'hsl(0,100%,0%)';
-  var c2 = 'hsl(0,100%,0%)';
-  var c3 = 'hsl(175,100%,50%)';
-  var c4 = 'hsl(0,100%,0%)';
-  var c5 = 'hsl(0,100%,0%)';
-  var st = 'hsl(0,100%,0%)';
-  var lg1 = 300;
-  var lg2 = 700;
-  var lg3 = 800;
-  var lg4 = 100;
-var isAndroid = /Android/i.test(navigator.userAgent);
-var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-
-  // --- Global Animation & Fractal Parameters ---
-  var initialRadiusFactor = 0.12;  // Global multiplier for the initial radius
-  var globalMaxDepth = 2;         // Recursion depth
-  var globalRotationAngle = Math.PI / 3; // Extra rotation for inner shapes
-  var globalScaleFactor = 0.3;    // Scale reduction at each recursion step
-
-  // New flag to choose base pattern: 1 = polygon (star/spiral), 2 = curved organic shape.
-  var basePatternType = 1;
-
-  // Random offset settings for animated inner shapes (in pixels)
-  var minRandomOffset = 1150;
-  var maxRandomOffset = 1150;
-
-  // --- Freeze Range Settings ---
-  var freezeRangeMin;
-  var freezeRangeMax;
-  var cycleDuration;
-  if (isAndroid) {
-      cycleDuration = 26000;
-      freezeRangeMin = 8000;
-      freezeRangeMax = 8000;
-    } else if (isIOS) {
-        cycleDuration = 26000;
-        freezeRangeMin = 8000;
-        freezeRangeMax = 8000;
-
-    } else {
-        cycleDuration = 23000;
-        freezeRangeMin = 8000;
-        freezeRangeMax = 8000;
-    }
-  var freezeTimestamp = null;
-  // Animation cycle duration (in milliseconds)
-  var animationStartTime = null;  // Will be set on page load
-  var vertexTargets = {};         // Store per-vertex oscillator parameters and cycle info
-
-  // --- Utility: Release Canvas ---
-  function releaseCanvas(canvas) {
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.clearRect(0, 0, 1, 1);
-    canvas.remove();
-  }
-
-  // --- Helper Function: Get Vertex Offset with Wavy, Random Oscillators ---
-  function getVertexOffset(depth, index) {
-    if (depth === 0) return { dx: 0, dy: 0 };
-
-    let now = performance.now();
-    if (now < animationStartTime) return { dx: 0, dy: 0 };
-
-    let elapsed = now - animationStartTime;
-    let t = (elapsed % cycleDuration) / cycleDuration;
-    let windowFunc = Math.pow(Math.sin(Math.PI * t), 2);
-
-    let key = depth + "_" + index;
-    let currentCycle = Math.floor(elapsed / cycleDuration);
-    if (!vertexTargets[key] || vertexTargets[key].cycle < currentCycle) {
-      vertexTargets[key] = {
-        cycle: currentCycle,
-        ax: minRandomOffset + Math.random() * (maxRandomOffset - minRandomOffset),
-        ay: minRandomOffset + Math.random() * (maxRandomOffset - minRandomOffset),
-        fx: 1 + Math.random() * 4,
-        fy: 1 + Math.random() * 4,
-        phaseX: Math.random() * 4 * Math.PI,
-        phaseY: Math.random() * 4 * Math.PI
-      };
-    }
-    let params = vertexTargets[key];
-    let factorX = windowFunc * Math.sin(2 * Math.PI * params.fx * t + params.phaseX);
-    let factorY = windowFunc * Math.sin(2 * Math.PI * params.fy * t + params.phaseY);
-
-    return { dx: params.ax * factorX, dy: params.ay * factorY };
-  }
-
-  // --- Fractal Class for Intricate, Symmetrical 3D Designs ---
-  class SymmetricFractal {
-    constructor(width, height, gradient) {
-      this.width = width;
-      this.height = height;
-      this.initialRadius = Math.min(width, height) * initialRadiusFactor;
-      this.maxDepth = globalMaxDepth;
-      this.sides = sides;
-      this.rotationAngle = globalRotationAngle;
-      this.scaleFactor = globalScaleFactor;
-      this.gradient = gradient;
+<!DOCTYPE HTML>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+    body, html {
+      padding:0 !important;
+      margin: 0 !important;
+      margin-bottom: 0px;
+      padding-bottom: 0px;
     }
 
-    draw(ctx) {
-      ctx.save();
-      ctx.translate(this.width / 2, this.height / 2);
-      for (let i = 0; i < this.sides; i++) {
-        ctx.save();
-        ctx.rotate(i * 2 * Math.PI / this.sides);
-        this.drawRecursiveShape(ctx, this.initialRadius, 0);
-        ctx.restore();
-      }
-      ctx.restore();
+    * {
+      padding: 0;
+      margin: 0;
+    }
+      body  { background-color: black; overflow: hidden;}
+    .img{
+      position: absolute;
+      object-fit: contain;
+      display: none;
     }
 
-    drawRecursiveShape(ctx, radius, depth) {
-      if (depth > this.maxDepth) return;
+    .modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #555; padding: 20px; border-radius: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    box-shadow: 0 0 20px gold; z-index: 10;
+}
+.modal button {
+    padding: 10px; background: #000; color: gold; border: none;
+    font-weight: bold; cursor: pointer; box-shadow: 0 0 10px gold;
+}
 
-      if (basePatternType === 1) {
-        ctx.beginPath();
-        for (let i = 0; i < this.sides; i++) {
-          let angle = i * 2 * Math.PI / this.sides;
-          let x = radius * Math.cos(angle);
-          let y = radius * Math.sin(angle);
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+      </style>
+    </head>
+      <body>
+        <div style="text-align:center; position: relative;">
+          <canvas id="leftEye" style="object-fit: contain; top: 0; left: 0; position: absolute;"></canvas>
+          <canvas id="final" style="object-fit: contain; top: 0; left: 0; position: absolute;"></canvas>
+          <img id="claude" class='img' alt="F5PF">
+        </div>
+
+        <script>
+        /*Release canvas from memory*/
+       function releaseCanvas(canvas) {
+        canvas.width = 1;
+        canvas.style.width = "1vw";
+        canvas.height = 1;
+        canvas.style.height = "1vh";
+        const ctx = canvas.getContext('2d');
+        ctx && ctx.clearRect(0, 0, 1, 1);
+        canvas.remove();
         }
-        ctx.closePath();
-      } else if (basePatternType === 2) {
-        let points = [];
-        for (let i = 0; i < this.sides; i++) {
-          let angle = i * 2 * Math.PI / this.sides;
-          let x = radius * Math.cos(angle);
-          let y = radius * Math.sin(angle);
-          points.push({ x: x, y: y });
+
+      	function getRandomInt(min, max) {
+        	return Math.floor(Math.random() * (max - min + 1) + min);
         }
-        ctx.beginPath();
-        if (points.length > 0) {
-          ctx.moveTo(points[0].x, points[0].y);
-          for (let i = 0; i < points.length; i++) {
-            let current = points[i];
-            let next = points[(i + 1) % points.length];
-            let cx = (current.x + next.x) / 2;
-            let cy = (current.y + next.y) / 2;
-            ctx.quadraticCurveTo(current.x, current.y, cx, cy);
-          }
-          ctx.closePath();
+        function getRandomInt1(min,max) {
+        	  return Math.random() * (max - min) + min;
         }
-      }
 
-      ctx.strokeStyle = this.gradient;
-      ctx.stroke();
-      ctx.fillStyle = this.gradient;
-      ctx.globalAlpha = 0.5;
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+        //image claude
+        var imgClaude = document.getElementById('claude');
+        imgClaude.width = 4096;
+        imgClaude.height = 4096;
+        imgClaude.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoEAAAKBCAMAAAAfjYGKAAAA2FBMVEVHcEzX19fQ0ND39/ff39/MzMzn5+f////v7+/7+/vb29vz8/Pr6+vj4+PU1NQAAAAisUztHCT/8gDAwMA/SMyjSaQ/Pz9/f38PDw8fHx9fX18vLy9PT0+Pj49vb29ZxHh0zo/2jZEvtlf/8w//9T/ExMTuKTE9umLvOD+Q2KX/919Lv23xVFr/+H+HjN/wRkxuddn1f4NiatX0cXZWXtL/9B9myYOoVKnzYmi6drr/9k//9C9KU8//+G//+Y+C05qTmOLLmMx6gdzIyMiuX6+0a7XFjcbAgcA1/ksCAAAAD3RSTlMAz+pgs/iYRXxTwW6Kpd2zQZu4AAAQDElEQVR42uzdiU7bShuAYbOGQKmVBW9ZJBSCEGIrBdGyqaXLuf87OlAd/h9oANv5ZuYbz/teQRQ/ms2OE0VERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERER0X/pXfCdkFtwwSZK4TEkyxCMJNErTJBnE9buXyLdI1Ye7cZJksVyDYsSXSuXgxcZKGA3pNXlFksdWQiG9GPMsyXtSXvDF0/2mNovdlYEwZHqxinKm4/Am3CzW1ZCrEsqwN4iVlnN1Gt0odbDPqGqQc8Jm2tM35b6+K+FyNSuP7DEXN229p3/OffWcmqvnub1iEHseZzP+DnxZ3IiYiv3bbfg/8D1vzDX16IQvjxvYgCvLrMvBDAWKj5lYf3EQca8YgSwGKWiBLAYRCEEKWyAEEQhBClsgBBHIjpjCFghBBLqO33Mi0HH8gASBjuOSI5ANMYUskKcUEMhSkMIWyDyMQMfxK04Esh+moAUyDyPQcfxwBIHMwxS0QDYjCGQQpKAFMggikEGQghbIIIhABkEKWiCPSyOQQZCCFsgrfhHI3WEKWSDTMAIdx/P6CGQQpKAF8osRBLqNl3ggkGkYgUzDhECmYQQyDRMCEYhAF/NgUqQvVmMji39pzKF0qAKzZJi+vQ1IE+4NI9DImJeW34AW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';
 
-      for (let i = 0; i < this.sides; i++) {
-        let angle = i * 16 * Math.PI / this.sides;
-        let x = radius * Math.cos(angle);
-        let y = radius * Math.sin(angle);
-        let offset = getVertexOffset(depth, i);
-        ctx.save();
-        ctx.translate(x + offset.dx, y + offset.dy);
-        ctx.rotate(this.rotationAngle);
-        let newRadius = radius * this.scaleFactor;
-        this.drawRecursiveShape(ctx, newRadius, depth + 1);
-        ctx.restore();
-      }
-    }
-  }
+        // Generate random color stops for both bg gradients
+        var colorStop1 = Math.random();
+        var colorStop2 = Math.random();
+        var colorStop3 = Math.random();
+        var colorStop4 = Math.random();
+        var colorStop5 = Math.random();
+        var colorStop6 = Math.random();
+        var colorStop7 = Math.random();
+        var colorStop8 = Math.random();
 
-  // --- Canvas Setup, Drawing, and Animation ---
-  window.addEventListener("load", function() {
-    const canvas = document.getElementById("canvas1");
-    const ctx = canvas.getContext("2d");
-    canvas.width = 4096;
-    canvas.height = 4096;
-    canvas.style.width = "100vw";
-    canvas.style.height = "100vh";
-
-    // Create a secondary canvas (dcan) for the fractal design and trails.
-    const dcan = document.createElement("canvas");
-    dcan.width = canvas.width;
-    dcan.height = canvas.height;
-    const dctx = dcan.getContext("2d");
-    // Ensure dcan starts transparent.
-    dctx.clearRect(0, 0, dcan.width, dcan.height);
-    // Set drawing styles for the main canvas.
-    dctx.lineWidth = 30;
-    dctx.lineCap = "miter";
-    dctx.shadowColor = "hsl(3,100%,50%)";
-    dctx.shadowOffsetY = 6;
-    dctx.shadowOffsetX = 3;
-    dctx.shadowBlur = 10;
-
-    // Draw and store the static background on the main canvas.
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const bgImage = new Image();
-    bgImage.src = canvas.toDataURL();
+        //Left Eye design + gradient canvas
+        canvasLeftEye = document.getElementById('leftEye');
+        canvasLeftEye.width = 4096;
+        canvasLeftEye.height = 4096;
+        canvasLeftEye.style.width = "100vw";
+        canvasLeftEye.style.height = '100vh';
+        canvasLeftEye.getContext('2d').scale(2,2);
+        var ctxLeftEye = canvasLeftEye.getContext("2d");
+        console.log("Left eye CANVAS created");
 
 
+        let clr2, clr3, clr4, clr5, clr6, clr7, textColor, glow;
 
-
-    // Create your gradient.
-    var gradient = ctx.createLinearGradient(lg1, lg2, lg3, lg4);
-    gradient.addColorStop(0.0, c1);
-    gradient.addColorStop(0.25, c2);
-    gradient.addColorStop(0.5, c3);
-    gradient.addColorStop(0.75, c4);  // This will be your red value
-    gradient.addColorStop(1.0, c5);
-
-
-    const fractal = new SymmetricFractal(canvas.width, canvas.height, gradient);
-
-    // Initialize animation timing.
-    animationStartTime = performance.now();
-    freezeTimestamp = animationStartTime + freezeRangeMin + Math.random() * (freezeRangeMax - freezeRangeMin);
-
-    // Animation loop:
-    function animate() {
-        // Check for freeze immediately.
-        if (performance.now() >= freezeTimestamp) {
-            // Optionally, draw the final frame without performing the fade.
-            // For example, just composite the last stored static background:
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-            ctx.drawImage(dcan, 0, 0, canvas.width, canvas.height);
-            return;  // Stop the animation loop.
+        switch (Math.floor(Math.random() * 3)) {
+          case 0:
+            clr2 = "#fdf250";
+            clr3 = "#da3831";
+            clr4 = "#55ae58";
+            clr5 = "#b2c0b5";
+            clr6 = "#4148c5";
+            clr7 = "#984e9f";
+            cAry = [clr2, clr3, clr4, clr5, clr6, clr7];
+            cAryIndx = getRandomInt(0, 5);
+            cAryPik = cAry[cAryIndx];
+            textColor = cAryPik;
+            glow = "#ffffff";
+            break;
+          case 1:
+            clr2 = "#da3831";
+            clr3 = "#4148c5";
+            clr4 = "#da3831";
+            clr5 = "#984e9f";
+            clr6 = "#4148c5";
+            clr7 = "#da3831";
+            textColor = "#fdf250";
+            glow = "#ffffff";
+            break;
+          case 2:
+            clr2 = "#da3831";
+            clr3 = "#fdf250";
+            clr4 = "#da3831";
+            clr5 = "#fdf250";
+            clr6 = "#da3831";
+            clr7 = "#fdf250";
+            textColor = "#000000";
+            cAry = [clr6, clr7];
+            cAryIndx = getRandomInt(0, 1);
+            cAryPik = cAry[cAryIndx];
+            glow = "#ffffff";
+            break;
         }
-      dctx.save();
-      dctx.globalCompositeOperation = "destination-out";
-      if (isAndroid) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-      } else if (isIOS) {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.095)";
-      } else {
-      dctx.fillStyle = "rgba(0, 0, 0, 0.09)";
-      }
 
-      dctx.fillRect(0, 0, dcan.width, dcan.height);
-      dctx.restore();
-      // Draw the fractal design on dcan.
-      
-      fractal.draw(dctx);
 
-      // Composite: clear main canvas, draw stored background, then composite dcan.
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-      ctx.drawImage(dcan, 0, 0, canvas.width, canvas.height);
+        //ctxLeftEye create background gradient
+        var leftEyeBGGrd = ctxLeftEye.createLinearGradient(0, Math.random() * 4096, Math.random() * 4096, Math.random() * 4096);
+        leftEyeBGGrd.addColorStop(colorStop2, clr2);
+        leftEyeBGGrd.addColorStop(colorStop3, clr3);
+        leftEyeBGGrd.addColorStop(colorStop4, clr4);
+        leftEyeBGGrd.addColorStop(colorStop5, clr5);
+        leftEyeBGGrd.addColorStop(colorStop6, clr6);
+        //leftEyeBGGrd.addColorStop(colorStop6, clr7);
+        console.log("ctxLeftEye BG gradient created");
 
-      if (performance.now() < freezeTimestamp) {
-        requestAnimationFrame(animate);
-      }
-    }
-    requestAnimationFrame(animate);
+        //ctxLeftEye Design gradient dimensions
+        var regionX3 = 0;
+        var regionY3 = 0;
+        var regionWidth3 = 2048;
+        var regionHeight3 = 2048;
 
-    // --- Click and Double-Click Functionalities ---
-    let timer;
-    canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
-    canvas.addEventListener("dblclick", () => {
-      clearTimeout(timer);
-      showModal();
-    });
+        //ctxLeftEye create design gradient
+        var leftEyeDesignGrd = ctxLeftEye.createLinearGradient(0, Math.random() * 2048, Math.random() * 2048, Math.random() * 2048);
+        leftEyeDesignGrd.addColorStop(colorStop1, "#ffffff");
+        leftEyeDesignGrd.addColorStop(colorStop2, "#fb1e08");
+        leftEyeDesignGrd.addColorStop(colorStop4, "#ffe600");
+        console.log("ctxLeftEye DESIGN gradient created");
 
-    window.addEventListener("pagehide", t => {
-      var canvases = document.getElementsByTagName("canvas");
-      var canvasesArray = Array.prototype.slice.call(canvases);
-      canvasesArray.forEach(releaseCanvas);
-    });
+        //draw circle
+        const centerX = canvasLeftEye.width / 2;
+        const centerY = canvasLeftEye.height / 2;
+        // Begin path and set fill style before drawing the circle
+        ctxLeftEye.beginPath();
+        ctxLeftEye.fillStyle = leftEyeBGGrd;
+        // Draw the circle
+        ctxLeftEye.arc(1024, 1024, 1018, 0, Math.PI * 2);
+        // Fill the circle (no closePath() needed)
+        ctxLeftEye.fill();
 
-    function showModal() {
-      const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
-      const modal = document.createElement('div');
-      modal.className = 'modal';
-      if (modal) {
-        modal.style.background = "#000";
-        modal.style.boxShadow = `0 0 10px ${c3}`;
-      }
-      options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.textContent = opt;
-        btn.onclick = () => {
-          document.body.removeChild(modal);
-          scaleCanvas(parseInt(opt), opt.includes('t'));
-        };
-        modal.appendChild(btn);
-        if (btn) {
-          btn.style.background = "#000";
-          btn.style.color = c3;
-          btn.style.boxShadow = `0 0 10px ${c3}`;
-        }
-      });
-      document.body.appendChild(modal);
-    }
+        //Global variables
+        var shdX = getRandomInt(-5, 5);
+        var shdY = getRandomInt(-5, 5);
+        var blur = 5;
+        var gap = Math.floor(Math.random() * 1) + .0079;
+        var increment = getRandomInt(200,500);
+        //draw ctxLeftEye design
+        var centerX2 = getRandomInt1(825,1235);
+        var centerY2 = getRandomInt1(805,1235);
+        ctxLeftEye.moveTo(centerX2, centerY2);
+        var dSize2 = 90000;
+        var theta = increment;
+        while( theta < Math.floor(Math.random() * 50.090909095) + dSize2) {
+           var newX2 = centerX2 + theta * Math.cos(theta) * gap;
+           var newY2 = centerY2 + theta * Math.sin(theta) * gap;
+           ctxLeftEye.lineTo(newX2, newY2);
+           theta = theta + increment;
+                }
+        ctxLeftEye.shadowColor = "#000000";
+        ctxLeftEye.shadowOffsetX = shdX;
+        ctxLeftEye.shadowOffsetY = shdY;
+        ctxLeftEye.shadowBlur = blur;
+        ctxLeftEye.strokeStyle = leftEyeDesignGrd;
+        ctxLeftEye.lineWidth = 4;
+        //ctxLeftEye.stroke();
+        console.log("ctxLeftEye DESIGN drawn");
 
-    // --- scaleCanvas Function ---
-    function scaleCanvas(multiplier, transparent) {
-      const originalAspectRatio = canvas.width / canvas.height;
-      const upscaleHeight = 512 * multiplier;
-      const upscaleWidth = upscaleHeight * originalAspectRatio;
+////////////////////////////////////////////////////////////////////////////////////////
 
-      const offscreenCanvas = document.createElement('canvas');
-      const offscreenCtx = offscreenCanvas.getContext('2d');
-      offscreenCanvas.width = upscaleWidth;
-      offscreenCanvas.height = upscaleHeight;
+        //create final canvas
+        var canvas = document.getElementById("final");
+        var ctxFinal = canvas.getContext("2d");
+        canvas.width =4096;
+      	canvas.height = 4096;
+      	canvas.style.width = "100vw";
+      	canvas.style.height = '100vh';
+        console.log("Final canvas created");
 
-      if (!transparent) {
-        offscreenCtx.fillStyle = '#000000';
+///////////////////////////////////////////////////////////////////////////////////////
+
+window.onload = function() {
+  // Copy the left eye canvas onto the final canvas
+  ctxFinal.drawImage(canvasLeftEye, 0, 0);
+  console.log("Left eye canvas copied");
+
+  // --- Create glow layer (for the outer glow) ---
+  var glowCanvas = document.createElement('canvas');
+  glowCanvas.width = imgClaude.width;
+  glowCanvas.height = imgClaude.height;
+  var glowCtx = glowCanvas.getContext('2d');
+
+  // Set shadow properties to create the glow effect
+  glowCtx.shadowBlur = 50; // adjust for desired glow softness
+  glowCtx.shadowColor = glow; // using the color from your switch
+  glowCtx.drawImage(imgClaude, 0, 0, 4096, 4096);
+
+  // --- Create fill layer (targeting only the central "P") ---
+  var fillCanvas = document.createElement('canvas');
+  fillCanvas.width = imgClaude.width;
+  fillCanvas.height = imgClaude.height;
+  var fillCtx = fillCanvas.getContext('2d');
+
+  // Draw the image normally so we capture its opaque pixels
+  fillCtx.drawImage(imgClaude, 0, 0, 4096, 4096);
+
+  // Define the clipping region for the P
+  // (Assuming the P is centered in the image; adjust radius as needed)
+  const centerX = fillCanvas.width / 2;   // e.g. 2048 if width is 4096
+  const centerY = fillCanvas.height / 2;  // e.g. 2048 if height is 4096
+  const pRadius = 1300; // adjust to match the size of the "P"
+
+  // Create a clipping path that only includes the central circle
+  // Define the clipping region for the "P" as an upright oval
+  // Define the clipping region for the "P" as an upright vertical oval rotated clockwise
+  fillCtx.save();
+  fillCtx.beginPath();
+  const rotationAngle = 15 * Math.PI / 180; // 15 degrees in radians
+  fillCtx.ellipse(centerX-120, centerY-100, 1050, 1700, rotationAngle, 0, Math.PI * 2);
+  fillCtx.closePath();
+  fillCtx.clip();
+
+  // Use composite mode so that the fill only affects the non-transparent pixels inside the clip
+  fillCtx.globalCompositeOperation = 'source-in';
+  fillCtx.fillStyle = textColor; // The color you want for the "P"
+  fillCtx.fillRect(0, 0, fillCanvas.width, fillCanvas.height);
+  fillCtx.restore();
+
+
+  // --- Composite both layers onto the final canvas ---
+  // Draw the glow layer (which covers all non-transparent edges)
+  ctxFinal.drawImage(glowCanvas, 0, 0, 4096, 4096);
+  // Draw the fill layer (which only changes the center "P")
+  ctxFinal.drawImage(fillCanvas, 0, 0, 4096, 4096);
+  console.log("Claude image with targeted fill and glow copied");
+};
+
+
+        console.log("copied to ctxFinal");
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+
+        let timer;
+        canvas.addEventListener("click", e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+
+        canvas.addEventListener("dblclick", () => {
+          clearTimeout(timer);
+            showModal();
+        });
+
+ function showModal() {
+             const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
+             const modal = document.createElement('div');
+             modal.className = 'modal';
+             if (modal) {
+               modal.style.background = "#000";
+               modal.style.boxShadow = `0 0 10px ${glow}`;
+             }
+             options.forEach(opt => {
+                 const btn = document.createElement('button');
+                 btn.textContent = opt;
+                 btn.onclick = () => {
+                     document.body.removeChild(modal);
+                     scaleCanvas(parseInt(opt), opt.includes('t'));
+                 };
+                 modal.appendChild(btn);
+                 // Apply the styles dynamically
+                 if (btn) {
+                   btn.style.background = "#000";
+                   btn.style.color = glow;
+                   btn.style.boxShadow = `0 0 10px ${glow}`;
+                 }
+               });
+             document.body.appendChild(modal);
+         }
+
+         function scaleCanvas(multiplier, transparent) {
+    // Calculate the target dimensions while preserving aspect ratio
+    const originalAspectRatio = canvas.width / canvas.height;
+    const upscaleHeight = 512 * multiplier;
+    const upscaleWidth = upscaleHeight * originalAspectRatio;
+
+    // Create the offscreen canvas
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+    offscreenCanvas.width = upscaleWidth;
+    offscreenCanvas.height = upscaleHeight;
+
+    // Handle background
+    if (!transparent) {
+        offscreenCtx.fillStyle = '#000000'; // Black background
         offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
-        // Draw the composite main canvas (background + dcan) onto the offscreen canvas.
-        offscreenCtx.drawImage(canvas, 0, 0, upscaleWidth, upscaleHeight);
-      } else {
-        offscreenCtx.clearRect(0, 0, upscaleWidth, upscaleHeight);
-        // Draw only dcan (the fractal design with trails, with transparent background) onto the offscreen canvas.
-        offscreenCtx.drawImage(dcan, 0, 0, upscaleWidth, upscaleHeight);
-      }
-
-      const link = document.createElement('a');
-      link.download = `Refract_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
-      link.href = offscreenCanvas.toDataURL('image/png');
-      link.click();
     }
-  });
 
+    // Calculate scaling factors
+    const scale = upscaleHeight / canvas.height;
+    const scaledWidth = canvas.width * scale;
+    const scaledHeight = canvas.height * scale;
+    const offsetX = (upscaleWidth - scaledWidth) / 2;
+    const offsetY = (upscaleHeight - scaledHeight) / 2;
 
-  </script>
-</body></html>
+    // Draw the original canvas onto the offscreen canvas
+    offscreenCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+    // Save the image
+    const link = document.createElement('a');
+    link.download = `F5PF_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+    link.href = offscreenCanvas.toDataURL('image/png');
+    link.click();
+}
+
+        /*Run release even when they refresh not with click (F5, refresh button, closing page)*/
+      	window.addEventListener('pagehide', (event) => {
+      		/*Release every canvas*/
+      			var canvases = document.getElementsByTagName("canvas");
+      			var canvasesList = Array.prototype.slice.call(canvases);
+              		canvasesList.forEach(releaseCanvas);
+      	});
+
+      </script>
+          </body>
+              </html>
