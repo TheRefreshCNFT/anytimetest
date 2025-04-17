@@ -1,230 +1,197 @@
-  <!DOCTYPE HTML>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-      body, html {
-        padding:0 !important;
-        margin: 0 !important;
-        margin-bottom: 0px;
-        padding-bottom: 0px;
-      }
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000000;
+    }
+    #canvas {
+      display: block;
+      object-fit: contain;
+      width: 100vw;
+      height: 100vh;
+    }
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #555;
+      padding: 20px;
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      box-shadow: 0 0 20px gold;
+      z-index: 10;
+    }
+    .modal button {
+      padding: 10px;
+      background: #000;
+      color: gold;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 10px gold;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
 
-      * {
-        padding: 0;
-        margin: 0;
-      }
-        body  { background-color: black; overflow: hidden;}
-      .img{
-        position: absolute;
-        object-fit: contain;
-        display: none;
-      }
+  <script>
+    const c1 = '#08B6CE';
+    const c2 = '#74D5DD';
+    const c3 = '#398AD7';
+    const c4 = '#2F66A9';
+    const xBrd = 100;
+    const yBrd = 100;
+    const dRsize = 60;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const htmlColors = [c1, c2, c3,c4];
+    let increment = Math.random() * (500 - 300) + 300;
+    /*draw on canvas with border
+    const centerX = getRandomDec(xBrd, canvas.width - xBrd);
+    const centerY = getRandomDec(yBrd, canvas.height - yBrd);
+    */
 
-        #myCanvas2 {
-  				-webkit-user-select: none;
-  				-ms-user-select: none;
-  				user-select: none;
-  			}
-    </style>
-    </head>
-    <body>
-    <div style="text-align:center; position: relative;">
-	     <img id="myImg" class='img' alt="CommunityImage"><!-- Main image -->
-       <canvas id="myCanvas" style="object-fit: contain; top: 0; left: 0; position: absolute;"></canvas><!-- Art-->
-       <canvas id="myCanvas2" style="object-fit: contain; top: 0; left: 0; position: absolute;"></canvas><!-- Display-->
-    </div>
+    function getRandomDec(min, max) {
+      return Math.random() * (max - min) + min;
+    }
 
-    </div>
+    function randomColor() {
+      return '#' + (Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0');
+    }
 
-    <script type="text/javascript">
-    const picScale = 1;
-    const picPush = 0;
-    const pic = 'data:image/png;base64,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lSuNPwHwAQyA5r/RA4Cf/vSnceWVV0Y2my3r4/b29saWLVviM5/5jBftMH31q1+Nr3/963H++eeX9XFff/31+Id/+If44Q9/aPwJgA9gAGrDWbmzS6UoTtjz1XsAsH379pg1a9axc/vLrVQqxe7du+OSSy7x4j2F++67L774xS9GOp0el8cfGBiIRx55JJYvX278CUBZuQoAAGV3du7cCW3+69ny5ctj9+7dMXv27HFr/iMiEolEzJ49O3bv3l3PjeeY5HK5WL9+fSxdunTcmv+IiHQ6HUuXLo3169dHLpdTeADKJqkEAJTTrNylt/fHezdM9PO+//77dVfLu+66K/7mb/4mzjjjjAl7zkmTJsW8efOira0tnnrqKS/o37nwwgvj/vvvj+uuu27CnvP888+Pyy67LLZu3RrvvvtuPZXzO15RAAIAAOpA86TE85V43noLAJYuXRrf/OY34/TTT5/w585ms3HxxRfH/v37Y9u2bQ3/ms7lcnH//ffHtddeO+HPPXPmzLjoooviiSeeqKfXuAAAoEKcgwVA2ZyVO6dUikJFnrve1gB44403YsaMGRXdhrfffjvOO++8hn9dP/zww3HDDTdUdBsee+yxuOWWW4w/ARgTawAAUPPNf715+eWXK978R0TMmDEjXn755YY+FqtXr6548x8RccMNN8Tq1au9OQAQAABQ4UYx1675L5ONGzeW/dJyY3H++efHxo0bG/JYfOUrX4mlS5dWzfYsXbo0vvKVr3iTACAAAKAyzjlzdmkw+hWiDJYsWRKf/OQno6mpen49NzU1xSc/+clYsmRJwx2PFStWRDabrZrtyWazsWLFCm8UAAQAAEy8jjMu/mUh8b5ClMk999wTra2tVbddra2tcc899zTUsVizZk1ccMEFVbddF1xwQaxZs8abBQABAAATK9/07tWqUB4PPvhgdHR0VO32dXR0xIMPPtgQx+K6666Lz3/+81W7fZ///Ocn9HKEAAgAAGhwuVyupArls2jRokgkqndx9EQiEYsWLWqIY7Fy5cpoaWmp2u1raWmJlStXetMAIAAAYAKa/zM1/+W0fv36mD59etVv5/Tp02P9+vV1fSyWLFkS1157bdVv57XXXtuQ6zIAIAAAYAKdfcbskqt4l9eCBQtsa5X4q7/6K9sKgAAAACIiik0W/Sun+++/vya+/T9q+vTpcf/9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7Th+XwBAAAAAVWDbtm1jun+1LPbW3d095n2ptF//+tfH/l4t36CPdjuO3xcAEAAAQBW48847a/7yecfvSy174YUXoqenp+YDgJ6ennjhhRe8uQAQAABAtTnadFJ5u3btioiIPXv2VMX2jGY7ju4DAAgAAKDK7N+/f9T3nTx5clXsQzabrYtj8eKLL0ZExI4dO6pie0azHUf3AQAEAABQZV555ZWa34dCoVAXx2LTpk0REfHmm29WxfaMZjuO7gMAnExCCQAYSi6XK9XS9nZ1ddVcjY8cORLJZHI0x6ZqFgKsF3v27IlrrrmmKkKAmTNnxssvvzzs27/33nvR0dFh/AnAKZkBAAAVcujQIUWoEi+++GJccMEFVbEtI90O0/8BEAAAQJX7z//8z1Hdb+rUqYpXZhs3bqyab9FHuh0bN250AAEQAABANVu0aFEMDAyM+H6f+MQnFK/M1q5dG6effnpVbMu555477NseOHAg1q5d6wACIAAAgGo3mrULvvWtbyncOKiWUzJGEgD84he/cOAAEAAAQC346U9/OuL7XHnllVVzKcB68tRTT1XFdpxzzjnDvu2aNWscOAAEAABQC+644444cODAiO+XzWYVr8xee+21qtiO9vb2Yd3u3//93+P555934AAQAABArdi8efOI77Ns2TKFq1Mf+chHhnW7Bx54QLEAGBHXYQVgSLlcrlRL2zuac+mrSWdnZ0yfPn2kxyi6u7u9WOvId77znVixYsUpb/f000/H5z73OeNPAEbEDAAAqAKbNm2KUmlkmctHP/pRhasz8+bNO+Vt+vr64t5771UsAAQAAFCLbr311tizZ8+I7rN582aLAdaZSy+99JS3+dd//dd48sknFQsAAQAA1KpVq1ZFT0/PiO4za9YshasT99xzT0ybNu2kt9mxY0fcfvvtigWAAAAAatmGDRviV7/6VQwODg77Ps8995xZAHXi2muvPen/7+3tje9973sKBYAAAADqweLFi+P1118f0X2+8IUvCAFq3KpVq2LOnDknvc1DDz0U//zP/6xYAIyaVVgBGJKrAFTWG2+8ETNmzBj27efMmRO7d+/2wq1RzzzzzEnP/3/sscfilltuMf4EYEzMAACAKnTXXXfFu+++O+zbv/rqq2YB1Kh77733pM3/008/HXfeeadCASAAAIB69NBDD8UPfvCDOHDgwLDv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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8P/bg0MCAAAAAEH/Xxu8AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAAqW/P4UrLBrIAAAAOZVhJZk1NACoAAAAIAAAAAAAAANJTkwAAAABJRU5ErkJggg==';
-    const c1 = '#a6f0c1'
-    const c2 = '#000000'
-    const c3 = '#fad137'
-    const c4 = '#9840c3'
-    const c5 = '#ee374c'
-    const c6 = '#f4f831'
-    const c7 = '#000000'
-    const c8 = '#50f0fe'
-    const c9 = '#ffffff'
-    let c10;
+    // Set canvas size dynamically based on window size
+    function setCanvasSize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
 
-        //image
-        var img = document.getElementById('myImg');
-        img.width = 4096;
-        img.height = 4096;
-			  img.src = pic;
+      // Reinitialize the drawing after resizing
+      redrawCanvas();
+    }
 
-        function getRandomInt1(min,max) {
-        return Math.random() * (max - min) + min;
-          }
-        function getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1) + min);
-          }
-        var ang1 = getRandomInt1(0, 1);
-        var ang2 = getRandomInt1(0, 1);
-        var ang3 = getRandomInt1(0, 1);
-        var shdX = getRandomInt1(-10, 10);
-        var shdY = getRandomInt1(-10, 10);
+    // Redraw the canvas content after resizing
+    function redrawCanvas() {
+      const centerX = getRandomDec(xBrd, canvas.width - xBrd);
+      const centerY = getRandomDec(yBrd, canvas.height - yBrd);
+      const gap = 0.0079;
+      let theta = increment;
+      const dSize = Math.min(canvas.width, canvas.height) * dRsize;
+      const maxTheta = Math.floor(Math.random() * 50) + dSize;
 
-        //art canvas
-        canvas = document.getElementById('myCanvas');
-        canvas.width = 4096;
-        canvas.height = 4096;
-        canvas.style.width = "100vw";
-        canvas.style.height = '100vh';
-        canvas.getContext('2d').scale(2,2);
+      // Gradient for the background
+      let grd = ctx.createLinearGradient(0, Math.random() * canvas.height, Math.random() * canvas.width, Math.random() * canvas.height);
+      grd.addColorStop(Math.random(), htmlColors[0]);
+      grd.addColorStop(Math.random(), htmlColors[1]);
+      grd.addColorStop(Math.random(), htmlColors[2]);
+      grd.addColorStop(Math.random(), htmlColors[3]);
 
-        var ctx = canvas.getContext("2d");
-        var grd = ctx.createLinearGradient(0, Math.floor(ang1 * 4096), Math.floor(ang2 * 4096), Math.floor(ang3 * 4096));
-        grd.addColorStop(Math.random(), c1);
-    	  grd.addColorStop(Math.random(), c2);
-        grd.addColorStop(Math.random(), c3);
-    	  ctx.fillStyle = grd;
-    	  ctx.fillRect(0, 0, 4096, 4096);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    	  var grd1 = ctx.createLinearGradient(0,Math.floor(ang1 * 4096),Math.floor(ang2 * 4096),Math.floor(ang3 * 4096));
-        grd1.addColorStop(Math.random(), c4);
-        grd1.addColorStop(Math.random(), c5);
-        grd1.addColorStop(Math.random(), c6);
-        grd1.addColorStop(Math.random(), c7);
-        grd1.addColorStop(Math.random(), c8);
-        grd1.addColorStop(Math.random(), c9);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.strokeStyle = "rgba(10,10,10,0.5)";
+      ctx.lineWidth = 2;
 
-        var centerX = getRandomInt1(400, 1750);
-        var centerY = getRandomInt1(400, 1750);
-        ctx.moveTo(centerX, centerY);
+      // Draw the spiral pattern
+      function draw() {
+        if (theta < maxTheta) {
+          const newX = centerX + theta * Math.cos(theta) * gap;
+          const newY = centerY + theta * Math.sin(theta) * gap;
 
-        var gap = Math.floor(Math.random() * 1) + .0079;
-  			var dSize = getRandomInt1(120000, 140000);
-        var d1 = 493.1615530225;
-    		var d2 = 436.6517557865409;
-        var d3 = 379.98366105572;
-        var d4 = 490.997525673686;
-        var d5 = 285.641486007616;
-        var d6 = 298.434195225065;
-    		var d7 = 373.709336608423;
-        var d8 = 466.20783382936;
-        var d9 = 316.98906018292;
-        var d10 = 468.890332629253;
-        var d11 = 360.661760710854;//x
-        var d12 = 469.136657179223;
-        var d13 = 405.71455462007157;
-        var d14 = 475.96151928369;
-        var d15 = 410.20980613747764;
-        var d16 = 332.5878318735574;
-        var d17 = 323.77114758118455;
-        var d18 = 317.0601297762582;
-        var d19 = 317.49605914599;
-        var d20 = 329.57921508488306;
-        var d21 = 374.8836866708794;
-        var d22 = 487.9994918932406;
-        var d23 = 373.8309159364412;
-        var d24 = 355.7844815174268;
-        var d25 = 467.9146221002783;
-        var d26 = 436.8188948625496;
-        var d27 = 411.86316654192285;
-        var d28 = 367.3813907839507;
-        var d29 = 431.96580315304146;
-        var d30 = 412.1860949454433;
-        var d31 = 350.28528425603565;
-        var d32 = 417.30649226113445;
-        var d33 = 486.32050426364003;
-        var d34 = 436.7826517497231;
-        var d35 = 433.6283360004907;
-    		var dArray = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17, d18, d19, d20, d21, d22, d23, d24, d25, d26, d27, d28, d29, d30, d31, d32, d33, d34, d35]
-    		var dIndex = getRandomInt(0, 34);
-    		var design = dArray[dIndex];
-    		var increment = design;console.log(increment);
-        var theta = increment;
-        while( theta < Math.floor(Math.random() * 50.090909095) + dSize) {
-        var newX = centerX + theta * Math.cos(theta) * gap;
-        var newY = centerY + theta * Math.sin(theta) * gap;
-        ctx.lineTo(newX, newY);
-        theta = theta + increment;
+          ctx.lineTo(newX, newY);
+          theta += increment;
+          ctx.stroke();
+          requestAnimationFrame(draw);
+        } else {
+          requestAnimationFrame(addShadow);
         }
-        ctx.shadowColor = "#222222";
-        ctx.shadowOffsetX = shdX;
-        ctx.shadowOffsetY = shdY;
-        ctx.shadowBlur = 15;
-        ctx.strokeStyle = grd1;
-        ctx.lineWidth = 4;
-        ctx.stroke();
+      }
 
-        //Final Canvas
-		    var can2 = document.getElementById("myCanvas2");
-        var ctx2 = can2.getContext("2d");
-		    can2.width =4096;
-      	can2.height = 4096;
-      	can2.style.width = "100vw";
-      	can2.style.height = '100vh';
+      function addShadow() {
+        if (ctx.shadowBlur < 0.0001) {
+          ctx.shadowColor = "rgba(45,45,45,0.6)";
+          ctx.shadowOffsetX = getRandomDec(-10, 10);
+          ctx.shadowOffsetY = getRandomDec(-10, 10);
+          ctx.shadowBlur += 15;
+          ctx.stroke();
+          requestAnimationFrame(addShadow);
+        } else {
+          ctx.stroke();
+        }
+      }
 
-        //Hide ctx n draw it onto myCanvas2
-    		ctx2.drawImage(canvas, 0, 0);
-    		document.getElementById("myCanvas").style.display = "none";
+      requestAnimationFrame(draw);
+    }
 
-/*
-        window.onload = function () {
-          const flipper = getRandomInt(0, 1);
-          const img = document.getElementById("myImg");
+    // Initial setup for the canvas
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
 
-          img.onload = () => {
-            const scale = picScale;
-            const scaledWidth = img.width * scale;
-            const scaledHeight = img.height * scale;
-            const x = (can2.width - scaledWidth) / 2;
-            const y = can2.height - scaledHeight - (scaledHeight * picPush);
+    let timer;
+    canvas.addEventListener('click', e => e.detail === 1 && (timer = setTimeout(() => location.reload(), 275)));
+    canvas.addEventListener('dblclick', () => {
+      clearTimeout(timer);
+      showModal();
+    });
 
-            if (flipper === 0) {
-              ctx2.save();
-              ctx2.scale(-1, 1);
-              ctx2.drawImage(img, -x - scaledWidth, y, scaledWidth, scaledHeight);
-              ctx2.restore();
-            } else {
-              ctx2.drawImage(img, x, y, scaledWidth, scaledHeight);
-            }
-          };
-
-          if (img.complete) {
-            img.onload();
-          }
+    // Modal and canvas scaling functionality
+    function showModal() {
+      const options = ['1k', '1kt', '2k', '2kt', '3k', '3kt', '4k', '4kt', '8k', '8kt', '16k', '16kt'];
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.textContent = opt;
+        btn.onclick = () => {
+          document.body.removeChild(modal);
+          scaleCanvas(parseInt(opt), opt.includes('t'));
         };
-        */
+        modal.appendChild(btn);
+      });
+      document.body.appendChild(modal);
+    }
 
-        //copy image onto myCanvas2 without flipper
-        window.onload = function(){
-        var img = document.getElementById("myImg");
-        const scale = picScale;
-        const scaledWidth = img.width * scale;
-        const scaledHeight = img.height * scale;
-        const x = (can2.width - scaledWidth) / 2;
-        const y = can2.height - scaledHeight - (scaledHeight * picPush);
-        ctx2.drawImage(img, x, y, scaledWidth, scaledHeight);
-        }
+    function scaleCanvas(multiplier, transparent) {
+      const originalAspectRatio = canvas.width / canvas.height;
+      const upscaleHeight = 1024 * multiplier;
+      const upscaleWidth = upscaleHeight * originalAspectRatio;
 
+      const offscreenCanvas = document.createElement('canvas');
+      const offscreenCtx = offscreenCanvas.getContext('2d');
+      offscreenCanvas.width = upscaleWidth;
+      offscreenCanvas.height = upscaleHeight;
 
-        let timer;
-        document.getElementById("myCanvas2").addEventListener('click', event => {
-          if (event.detail === 1) {
-          timer = setTimeout(() => {
-            location.reload();
-          }, 200)
-          }
-        });
-        document.getElementById("myCanvas2").addEventListener('dblclick', event => {
-          clearTimeout(timer);
-              event.preventDefault();
-              const link = document.createElement('a');
-              link.download = 'community.png';
-              link.href = myCanvas2.toDataURL();
-              link.click();
-          });
+      if (!transparent) {
+        offscreenCtx.fillStyle = '#000000';
+        offscreenCtx.fillRect(0, 0, upscaleWidth, upscaleHeight);
+      }
+
+      const scale = upscaleHeight / canvas.height;
+      const scaledWidth = canvas.width * scale;
+      const scaledHeight = canvas.height * scale;
+      const offsetX = (upscaleWidth - scaledWidth) / 2;
+      const offsetY = (upscaleHeight - scaledHeight) / 2;
+
+      offscreenCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+      const link = document.createElement('a');
+      link.download = `F5_${multiplier}k_${transparent ? 'TP' : 'BLK'}.png`;
+      link.href = offscreenCanvas.toDataURL('image/png');
+      link.click();
+    }
 
 function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
-
-    </script>
-        </body>
-            </html>
+  </script>
+</body>
+</html>
