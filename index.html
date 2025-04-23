@@ -63,9 +63,9 @@
       canvas.getContext('2d').scale(2,2);
 
       const cl1 = '#000000'
-      const cl2 = '#c3c3c3'
-      const cl3 = '#000000'
-      const cl4 = '#faa557'
+      const cl2 = '#ffbe6e'
+      const cl3 = '#8aa9f4'
+      const cl4 = '#d6f0fc'
       const cl5 = '#509be6'
       const cl6 = '#ed5151'
       const cl7 = '#000000'
@@ -76,30 +76,37 @@
       var grd = ctx.createLinearGradient(0, Math.floor(ang1 * 2048), Math.floor(ang2 * 2048), Math.floor(ang3 * 2048));
       grd.addColorStop(Math.random(), cl1);
       grd.addColorStop(Math.random(), cl2);
-      //grd.addColorStop(Math.random(), cl3);
+      grd.addColorStop(Math.random(), cl3);
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, 2048, 2048);
 
       var grd1 = ctx.createLinearGradient(0,Math.floor(ang1 * 2048),Math.floor(ang2 * 2048),Math.floor(ang3 * 2048));
+      grd1.addColorStop(Math.random(), cl4);
       grd1.addColorStop(Math.random(), cl5);
       grd1.addColorStop(Math.random(), cl6);
       grd1.addColorStop(Math.random(), cl8);
-      grd1.addColorStop(Math.random(), cl9);
+      grd1.addColorStop(Math.random(), cl6);
 
       var centerX = getRandomInt1(192, 832);
       var centerY = getRandomInt1(128, 608);
       ctx.moveTo(centerX, centerY);
 
       var gap = Math.floor(Math.random() * 1) + .0079;
-      var dSize = getRandomInt1(120000, 140000);
+      var dSize = getRandomInt1(80000, 100000);
       var d1 = 490.997525673686;
       var d2 = 298.431195225065;
+      var d3 = 215.71730510958773;
+      var d4 = 288.13185916809107;
+      var d5 = 282.3504657533625
       var d6 = 350.28528425603565;
       var d7 = 433.6283360004907;
-      var dArray = [d1, d2, d6, d7]
-      var dIndex = getRandomInt(0, 3);
+      var d8 = 260.69306788415395;
+      var d9 = 282.5406954966255;
+      var d10 = 224.6110107784042;
+      var dArray = [d1, d2, d3, d4, d5, d6, d7, d8 , d9, d10]
+      var dIndex = getRandomInt(0, 9);
       var design = dArray[dIndex];
-      var increment = design;console.log(increment);
+      var increment = design;
       var theta = increment;
       while( theta < Math.floor(Math.random() * 50.090909095) + dSize) {
       var newX = centerX + theta * Math.cos(theta) * gap;
@@ -110,7 +117,7 @@
       ctx.shadowColor = "#000000";
       ctx.shadowOffsetX = shdX;
       ctx.shadowOffsetY = shdY;
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 3;
       ctx.strokeStyle = grd1;
       ctx.lineWidth = 3;
       ctx.stroke();
@@ -151,7 +158,21 @@ link.href = c2.toDataURL();
 link.click();
 });
 
-function releaseCanvas(canvas){canvas.width=1;canvas.style.width="1vw";canvas.height=1;canvas.style.height="1vh";const ctx=canvas.getContext("2d");ctx&&ctx.clearRect(0,0,1,1);canvas.remove()}window.addEventListener("pagehide",event=>{var canvases=document.getElementsByTagName("canvas");var canvasesList=Array.prototype.slice.call(canvases);canvasesList.forEach(releaseCanvas)});
+/*Release canvas from memory*/
+    function releaseCanvas(canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 1;
+      canvas.height = 1;
+      canvas.remove();
+    }
+
+      ['beforeunload', 'pagehide'].forEach(event => {
+        /*Release every canvas*/
+        window.addEventListener(event, () => {
+      document.querySelectorAll('canvas').forEach(releaseCanvas);
+    });
+        });
 
   </script>
       </body>
