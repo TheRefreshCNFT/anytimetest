@@ -1,36 +1,20 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BTC Transaction Animation</title><style>body,html{margin:0;padding:0;height:100%;overflow:hidden;background:#fff}#wrapper{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}#container{font-family:monospace;white-space:pre}#container span{display:inline-block}</style></head><body><div id="wrapper"><div id="container"></div></div>
   <script>
   // — Add global color constants and single/double-click handling:
-  const TEXT_COLOR = '#9C9DDE';
-  const BG_COLOR   = '#70625C';
+  const TEXT_COLOR = '%%TCLR%%';
+  const BG_COLOR   = '%%BGCLR%%';
 
 const container=document.getElementById("container");container.style.touchAction="manipulation";container.style.fontSize="36px";
 
   const text = `00000000   01 00 00 00 01 00 00 00  00 00 00 00 00 00 00 00   ................
 00000010   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00   ................
-00000020   00 00 00 00 00 FF FF FF  FF FD 33 01 7C B4 75 60   ..........3.|.u\`
-00000030   C6 23 31 0F F0 3C 06 95  01 60 EF 38 ED 4C 48 82   .#1..<...\`.8.LH.
-00000040   57 BA CA 82 74 53 7C 12  2B 52 E6 84 94 49 41 CF   W...tS|.+R...IA.
-00000050   F9 22 DB A2 2B 99 DD CE  12 43 D5 D6 20 23 41 50   ."..+....C.. #AP
-00000060   54 BA 81 23 99 6B 21 2D  AE F3 0C 66 1D DE DD 8E   T..#.k!-...f....
-00000070   BB B6 93 F2 A7 FC 35 5F  11 3D 4D 2C AD FC 11 B4   ......5_.=M,....
-00000080   E2 90 27 56 34 D1 DE 23  E8 E7 07 F9 E7 7D C5 9E   ..'V4..#.....}..
-00000090   D3 3F 1E C2 27 07 29 6E  E5 31 24 61 AE 23 AC 18   .?..'.)n.1$a.#..
-000000A0   D4 06 2C DE F5 EF C5 4B  C0 2B DE 28 73 0B F7 72   ..,....K.+.(s..r
-000000B0   6C 6D CC 05 B2 42 93 6B  A7 C1 88 E0 6F 03 23 D9   lm...B.k....o.#.
-000000C0   06 F0 D4 CC A1 A1 82 BD  F3 6D 16 48 A7 3A 58 14   .........m.H.:X.
-000000D0   0A B3 14 A6 B4 0E A4 B8  DC BA D0 72 41 AA 80 E9   ...........rA...
-000000E0   93 2C 90 9B CD E5 85 C8  F7 C8 95 3A 12 6C 78 37   .,.........:.lx7
-000000F0   85 63 F4 19 9B C4 67 07  D9 64 4B B3 D8 E7 5D 70   .c....g..dK...]p
-00000100   C6 78 8A F4 7C 12 73 05  13 97 CF F3 49 48 FD 38   .x..|.s.....IH.8
-00000110   B8 C8 39 59 8B 70 B6 05  77 DF 4D 93 8F 17 52 A9   ..9Y.p..w.M...R.
-00000120   F7 76 3F 7D F8 5E AA 75  53 E0 E0 94 01 1A 09 50   .v?}.^.uS......P
-00000130   70 DA 01 AF E0 3A D9 80  46 39 F0 75 01 04 20 49   p....:..F9.u.. I
-00000140   74 3F 73 20 70 72 6F 62  61 62 6C 79 20 72 61 74   t?s probably rat
-00000150   20 70 6F 69 73 6F 6E 20  73 71 75 61 72 65 64 FF    poison squared.
-00000160   FF FF FF 01 00 F2 05 2A  01 00 00 00 19 76 A9 14   .......*.....v..
-00000170   91 85 A3 EF 76 BC FB 33  40 61 F7 CE E2 CE FE 90   ....v..3@a......
-00000180   A4 9A 18 6E 88 AC 00 00  00 00                     ...n......`;
+00000020   00 00 00 00 00 FF FF FF  FF 32 66 22 A3 E0 01 04   .........2f"....
+00000030   2B 57 65 27 72 65 20 67  6F 69 6E 67 20 74 6F 20   +We're going to 
+00000040   63 6F 6D 62 69 6E 65 20  48 79 72 64 61 20 77 69   combine Hyrda wi
+00000050   74 68 20 4C 69 67 68 74  6E 69 6E 67 FF FF FF FF   th Lightning....
+00000060   01 00 F2 05 2A 01 00 00  00 19 76 A9 14 33 20 80   ....*.....v..3 .
+00000070   F6 E8 D9 EE ED 20 3C FD  26 EA 2D 53 AB 7A 10 C3   ..... <.&.-S.z..
+00000080   41 88 AC 00 00 00 00                               A......`;
 
 container.innerHTML="";container.style.color=TEXT_COLOR;document.body.style.backgroundColor=BG_COLOR;const diag=Math.hypot(window.innerWidth,window.innerHeight);text.split("\n").forEach((line,lineIndex,linesArr)=>{line.split("").forEach(ch=>{const span=document.createElement("span");span.textContent=ch;span.style.transition=`transform ${1+Math.random()*2}s cubic-bezier(0.22,1,0.36,1) ${Math.random()}s`;const theta=Math.random()*2*Math.PI;const d=diag/2+Math.random()*diag/2;const offsetX=d*Math.cos(theta);const offsetY=d*Math.sin(theta);const rot=Math.random()*720-360;span.style.transform=`translate(${offsetX}px, ${offsetY}px) rotate(${rot}deg)`;container.appendChild(span)});if(lineIndex<text.split("\n").length-1){container.appendChild(document.createElement("br"))}});window.addEventListener("load",()=>{const containerRect=container.getBoundingClientRect();const scale=Math.min(1,Math.min(window.innerWidth/containerRect.width,window.innerHeight/containerRect.height)*.95);const wrapper=document.getElementById("wrapper");wrapper.style.transform=`translate(-50%, -50%) scale(${scale})`;requestAnimationFrame(()=>{document.querySelectorAll("#container span").forEach(span=>{span.style.transform=""})})});function saveContainerImage(){const PADDING=45;const container=document.getElementById("container");const wrapper=document.getElementById("wrapper");const style=window.getComputedStyle(container);const fontSize=parseFloat(style.fontSize);const transform=wrapper.style.transform;const m=/scale\(([^)]+)\)/.exec(transform);const scale=m?parseFloat(m[1]):1;const rect=container.getBoundingClientRect();const width=rect.width/scale;const height=rect.height/scale;const canvas=document.createElement("canvas");canvas.width=width+PADDING*2;canvas.height=height+PADDING*2;const ctx2=canvas.getContext("2d");ctx2.fillStyle=BG_COLOR;ctx2.fillRect(0,0,canvas.width,canvas.height);ctx2.fillStyle=TEXT_COLOR;ctx2.font=`${fontSize}px ${style.fontFamily}`;ctx2.textBaseline="top";ctx2.textAlign="left";ctx2.translate(PADDING,PADDING);const lines=[];let currentLine="";container.childNodes.forEach(node=>{if(node.nodeName==="BR"){lines.push(currentLine);currentLine=""}else{currentLine+=node.textContent}});if(currentLine.length>0){lines.push(currentLine)}const lineHeight=fontSize*1.2;lines.forEach((line,i)=>{ctx2.fillText(line,0,i*lineHeight)});const dataUrl=canvas.toDataURL("image/png");const link=document.createElement("a");link.href=dataUrl;link.download="animation.png";document.body.appendChild(link);link.click();link.remove()}(function(){const isiOS=/iphone|ipad/i.test(navigator.userAgent);function addDoubleTap(element,onDoubleTap,onTap,delay=500){let last=0;let timer=null;const eventName=isiOS?"touchend":"click";element.addEventListener(eventName,event=>{const now=Date.now();const delta=now-last;clearTimeout(timer);if(delta>0&&delta<delay){onDoubleTap&&onDoubleTap(event)}else{timer=setTimeout(()=>{onTap&&onTap(event);clearTimeout(timer)},delay)}last=now})}const container=document.getElementById("container");addDoubleTap(container,e=>{e.preventDefault();clearTimeout();saveContainerImage()},e=>{setTimeout(()=>location.reload(),275)},500);window.addDoubleTap=addDoubleTap})();
 
